@@ -8,15 +8,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
-  findById(userId: string) {
-    throw new Error('Method not implemented.');
-  }
-  markEmailVerified(sub: any) {
-    throw new Error('Method not implemented.');
-  }
-  findByEmail(email: string) {
-    throw new Error('Method not implemented.');
-  }
   constructor(
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
@@ -26,7 +17,6 @@ export class UsersService {
     const { email, firstName, lastName, phoneNumber } = data;
     const created = new this.userModel({
       email,
-      passwordHash: '',
       firstName,
       lastName,
       phoneNumber,

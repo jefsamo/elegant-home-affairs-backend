@@ -8,7 +8,7 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -38,14 +38,19 @@ export class AuthService {
   private getAccessToken(payload: any): string {
     return this.jwt.sign(payload, {
       secret: this.config.get<string>('JWT_ACCESS_SECRET'),
-      // expiresIn: this.config.get<string>('JWT_ACCESS_EXPIRES_IN') ?? '15m',
+      expiresIn:
+        this.config.get<JwtSignOptions['expiresIn']>('JWT_ACCESS_EXPIRES_IN') ??
+        '15m',
     });
   }
 
   private getRefreshToken(payload: any): string {
     return this.jwt.sign(payload, {
       secret: this.config.get<string>('JWT_REFRESH_SECRET'),
-      // expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d',
+      expiresIn:
+        this.config.get<JwtSignOptions['expiresIn']>(
+          'JWT_REFRESH_EXPIRES_IN',
+        ) ?? '7d',
     });
   }
 
@@ -133,12 +138,13 @@ export class AuthService {
       const payload = this.jwt.verify(token, {
         secret: this.config.get<string>('JWT_ACCESS_SECRET'),
       });
+      console.log(this.config.get<string>('JWT_ACCESS_SECRET'));
 
       if (payload.type !== 'email-verify') {
         throw new BadRequestException('Invalid token type');
       }
 
-      await this.usersService.markEmailVerified(payload.sub);
+      await this.usersService.markUserEmailAsVerified(payload.sub);
       return { message: 'Email verified successfully' };
     } catch {
       throw new BadRequestException('Invalid or expired token');
