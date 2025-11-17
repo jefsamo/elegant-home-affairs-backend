@@ -138,7 +138,7 @@ export class AuthService {
       const payload = this.jwt.verify(token, {
         secret: this.config.get<string>('JWT_ACCESS_SECRET'),
       });
-      console.log(this.config.get<string>('JWT_ACCESS_SECRET'));
+      // console.log(this.config.get<string>('JWT_ACCESS_SECRET'));
 
       if (payload.type !== 'email-verify') {
         throw new BadRequestException('Invalid token type');
