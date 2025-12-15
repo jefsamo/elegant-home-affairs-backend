@@ -26,7 +26,7 @@ export class CategoryService {
   }
 
   async findAll() {
-    return this.categoryModel.find().exec();
+    return await this.categoryModel.find().exec();
   }
 
   async findById(id: string) {
