@@ -8,8 +8,10 @@ import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { ProductModule } from './product/product.module';
 import { CategoryModule } from './category/category.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
+  //
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env', cache: true }),
     MongooseModule.forRootAsync({
@@ -24,6 +26,7 @@ import { CategoryModule } from './category/category.module';
     MailModule,
     ProductModule,
     CategoryModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

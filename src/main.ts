@@ -6,6 +6,16 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
   const port = process.env.PORT || 3000;
+  app.enableCors({
+    // origin: 'https://finnybank-fe.vercel.app',
+    origin: [
+      // 'https://finnybank-fe.vercel.app', // production FE
+      'http://localhost:5173', // local dev (no trailing slash)
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization',
+    credentials: true,
+  });
   await app.listen(process.env.PORT ?? 3000);
   console.log(`Backend running on http://localhost:${port}`);
 }
