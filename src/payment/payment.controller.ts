@@ -38,11 +38,6 @@ export class PaymentController {
     return this.paystack.fetchPage(id);
   }
 
-  /**
-   * WEBHOOK (Recommended):
-   * Paystack calls this endpoint after payment events.
-   * You verify signature, then update order status in DB.
-   */
   @Post('webhook')
   webhook(@Req() req: Request) {
     const signature = req.headers['x-paystack-signature'] as string;
