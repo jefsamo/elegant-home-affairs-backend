@@ -7,6 +7,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { InitializePaystackDto } from './dto/initialize-paystack.dto';
 import { firstValueFrom } from 'rxjs';
+import { CreatePageDto } from './dto/create-page.dto';
 
 @Injectable()
 export class PaystackService {
@@ -34,13 +35,27 @@ export class PaystackService {
     );
     return resp.data; // Paystack returns { status, message, data: { authorization_url, access_code, reference } }
   }
+  async paymentPage(dto: CreatePageDto) {
+    const url = `${this.baseUrl}/page`;
+    const resp = await firstValueFrom(
+      this.http.post(url, dto, { headers: this.headers }),
+    );
+    return resp.data;
+  }
 
   async verify(reference: string) {
     const url = `${this.baseUrl}/transaction/verify/${reference}`;
     const resp = await firstValueFrom(
       this.http.get(url, { headers: this.headers }),
     );
-    return resp.data; // Paystack returns { status, message, data: {...} }
+    return resp.data;
+  }
+  async fetchPage(id: number) {
+    const url = `${this.baseUrl}/page/${id}`;
+    const resp = await firstValueFrom(
+      this.http.get(url, { headers: this.headers }),
+    );
+    return resp.data;
   }
 
   // Webhook signature check (recommended)

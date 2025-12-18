@@ -11,6 +11,7 @@ async function bootstrap() {
     origin: [
       // 'https://finnybank-fe.vercel.app', // production FE
       'http://localhost:5173', // local dev (no trailing slash)
+      'http://172.16.50.30:5173', // local dev (no trailing slash)
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',

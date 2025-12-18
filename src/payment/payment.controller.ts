@@ -15,6 +15,7 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { InitializePaystackDto } from './dto/initialize-paystack.dto';
 import { Headers } from '@nestjs/common';
+import { CreatePageDto } from './dto/create-page.dto';
 
 @Controller('payment/paystack')
 export class PaymentController {
@@ -23,10 +24,18 @@ export class PaymentController {
   initialize(@Body() dto: InitializePaystackDto) {
     return this.paystack.initialize(dto);
   }
+  @Post('create-page')
+  createPaystackPaymentPage(@Body() dto: CreatePageDto) {
+    return this.paystack.paymentPage(dto);
+  }
 
   @Get('verify/:reference')
   verify(@Param('reference') reference: string) {
     return this.paystack.verify(reference);
+  }
+  @Get('page/:id')
+  fetchPage(@Param('id') id: number) {
+    return this.paystack.fetchPage(id);
   }
 
   /**
