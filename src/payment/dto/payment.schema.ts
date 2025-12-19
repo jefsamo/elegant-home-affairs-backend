@@ -6,7 +6,7 @@ export type PaymentDocument = Payment & Document;
 
 @Schema({ timestamps: true })
 export class Payment {
-  @Prop({ required: true, trim: true })
+  @Prop({ required: true })
   reference: string;
 
   @Prop({ trim: true })
@@ -17,11 +17,11 @@ export class Payment {
   @Prop({ required: true })
   amount: number;
 
-  @Prop({ required: true })
-  createdAt: number;
-
   @Prop({ type: Types.ObjectId, ref: 'User' })
-  createdBy: string;
+  userId: string;
+
+  @Prop({ type: Object })
+  checkoutSnapshot?: any;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

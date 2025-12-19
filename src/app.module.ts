@@ -9,6 +9,8 @@ import { MailModule } from './mail/mail.module';
 import { ProductModule } from './product/product.module';
 import { CategoryModule } from './category/category.module';
 import { PaymentModule } from './payment/payment.module';
+import { OrderModule } from './order/order.module';
+import { DiscountModule } from './discount/discount.module';
 
 @Module({
   //
@@ -27,6 +29,8 @@ import { PaymentModule } from './payment/payment.module';
     ProductModule,
     CategoryModule,
     PaymentModule,
+    OrderModule,
+    DiscountModule,
   ],
   controllers: [AppController],
   providers: [AppService],

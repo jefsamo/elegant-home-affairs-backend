@@ -11,8 +11,6 @@ import {
 } from './schemas/refresh-token.schema';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
-import { UsersService } from 'src/users/users.service';
-import { MailService } from 'src/mail/mail.service';
 
 @Module({
   imports: [

@@ -7,7 +7,7 @@ export class InitializePaystackDto {
 
   // amount in kobo
   @IsInt()
-  @Min(100) // ₦1.00 minimum example; set what you want
+  @Min(100)
   amount: number;
 
   @IsOptional()
