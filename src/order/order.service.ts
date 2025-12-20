@@ -1,14 +1,71 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // src/orders/orders.service.ts
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
 import { Order } from './entities/order.entity';
+import { Product } from 'src/product/schemas/product.schema';
 
 @Injectable()
 export class OrdersService {
-  constructor(@InjectModel(Order.name) private orderModel: Model<Order>) {}
+  constructor(
+    @InjectModel(Order.name) private orderModel: Model<Order>,
+    @InjectModel(Product.name) private productModel: Model<Product>,
+    @InjectConnection() private connection: Connection,
+  ) {}
 
+  private async decrementStockForOrderItems(
+    items: { productId: string; quantity: number }[],
+    session: any,
+  ) {
+    for (const item of items) {
+      const prod: any = await this.productModel
+        .findById(item.productId)
+        .session(session);
+
+      if (!prod)
+        throw new BadRequestException(`Product not found: ${item.productId}`);
+
+      if (prod.kind === 'single') {
+        // deduct directly
+        const ok = await this.productModel.updateOne(
+          { _id: prod._id, stock: { $gte: item.quantity } },
+          { $inc: { stock: -item.quantity } },
+          { session },
+        );
+        if (ok.modifiedCount !== 1) {
+          throw new BadRequestException(`Insufficient stock for ${prod.name}`);
+        }
+      }
+
+      if (prod.kind === 'combo') {
+        // load components and deduct from each component product stock
+        if (!prod.components?.length) {
+          throw new BadRequestException(
+            `Combo has no components: ${prod.name}`,
+          );
+        }
+
+        for (const c of prod.components) {
+          const needed = (c.quantity ?? 1) * item.quantity;
+
+          const ok = await this.productModel.updateOne(
+            { _id: c.productId, stock: { $gte: needed } },
+            { $inc: { stock: -needed } },
+            { session },
+          );
+
+          if (ok.modifiedCount !== 1) {
+            throw new BadRequestException(
+              `Insufficient stock for combo component`,
+            );
+          }
+        }
+      }
+    }
+  }
   async createFromPayment(args: {
     userId: string;
     reference: string;
