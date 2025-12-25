@@ -1,5 +1,9 @@
 // src/users/users.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
@@ -48,10 +52,37 @@ export class UsersService {
       .exec();
   }
 
-  async updateProfile(userId: string, dto: UpdateUserDto): Promise<User> {
-    const user = await this.userModel
+  async updateProfile(
+    userId: string,
+    dto: UpdateUserDto,
+    user: { userId: string },
+  ): Promise<User> {
+    if (userId !== user.userId) throw new ForbiddenException();
+
+    const userProfile = await this.userModel
       .findByIdAndUpdate(userId, dto, { new: true })
       .exec();
+    if (!userProfile) throw new NotFoundException('User not found');
+    return userProfile;
+  }
+
+  async getMe(userId: string) {
+    const user = await this.userModel
+      .findById(userId)
+      .select('-password')
+      .exec();
+    console.log(user);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async updateMe(userId: string, dto: UpdateUserDto) {
+    // Optional: prevent email changes or enforce uniqueness here
+    const user = await this.userModel
+      .findByIdAndUpdate(userId, dto, { new: true })
+      .select('-password')
+      .exec();
+
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
