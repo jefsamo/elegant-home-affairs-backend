@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 // src/products/products.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -19,23 +23,28 @@ export class ProductService {
     private categoriesService: CategoryService,
   ) {}
 
-  async create(dto: CreateProductDto, userId: string): Promise<Product> {
+  async create(
+    dto: CreateProductDto,
+    userId: string,
+    files: Express.Multer.File[],
+  ) {
     const category = await this.categoriesService.findById(dto.categoryId);
-    if (!category) {
-      throw new NotFoundException('Category not found');
-    }
+    if (!category) throw new NotFoundException('Category not found');
+
+    const uploadedUrls = files?.map((f) => `/uploads/${f.filename}`) ?? [];
 
     const product = new this.productModel({
       ...dto,
+      images: uploadedUrls,
       createdBy: userId,
     });
+
     return product.save();
   }
 
   async findAll(
     pagination: PaginationQueryDto,
   ): Promise<PaginatedResult<Product>> {
-    // optional: build filter here (e.g. filter by category)
     const filter = {};
 
     return paginate<ProductDocument>(this.productModel, pagination, filter);
@@ -47,12 +56,28 @@ export class ProductService {
     return product;
   }
 
-  async update(id: string, dto: UpdateProductDto): Promise<Product> {
-    const product = await this.productModel
-      .findByIdAndUpdate(id, dto, { new: true })
-      .exec();
+  async update(
+    id: string,
+    dto: UpdateProductDto,
+    files: Express.Multer.File[],
+  ): Promise<Product> {
+    const product = await this.productModel.findById(id);
     if (!product) throw new NotFoundException('Product not found');
-    return product;
+
+    const uploadedUrls = files?.map((f) => `/uploads/${f.filename}`) ?? [];
+
+    const baseImages =
+      dto.keepImages !== undefined ? dto.keepImages : product.images;
+
+    const finalImages = [...(baseImages ?? []), ...uploadedUrls];
+
+    delete dto.keepImages;
+
+    Object.assign(product, dto);
+
+    product.images = finalImages;
+
+    return product.save();
   }
 
   async remove(id: string): Promise<void> {

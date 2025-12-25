@@ -23,10 +23,10 @@ export class Product {
   name: string;
 
   @Prop({ trim: true })
-  description?: string;
+  description: string;
 
   @Prop({ default: false })
-  isTrending?: boolean;
+  isTrending: boolean;
 
   @Prop({ required: true })
   price: number;
@@ -49,10 +49,10 @@ export class Product {
   categoryId: string;
 
   @Prop({ type: String, enum: ['single', 'combo'], default: 'single' })
-  kind: ProductKind;
+  kind?: ProductKind;
 
   @Prop({ type: [ProductComponentSchema], default: [] })
-  components: ProductComponent[];
+  components?: ProductComponent[];
 
   @Prop({ type: Number, default: 0 })
   bundlePrice?: number; // if > 0 use as price

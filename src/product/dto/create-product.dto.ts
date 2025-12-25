@@ -38,10 +38,12 @@ export class CreateProductDto {
   @IsString({ each: true })
   images?: string[];
 
-  //   @IsOptional()
-  //   @IsArray()
-  //   @IsString({ each: true })
-  //   categories?: string[];
+  keepImages?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  categories?: string[];
 
   @IsString()
   categoryId: string;

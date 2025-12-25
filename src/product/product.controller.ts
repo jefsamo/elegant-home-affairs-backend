@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 // src/products/products.controller.ts
@@ -10,7 +11,9 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -20,39 +23,62 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('product')
 export class ProductController {
   constructor(private readonly productsService: ProductService) {}
 
-  // Public: list products
   @Get()
   async findAll(@Query() query: PaginationQueryDto) {
     return this.productsService.findAll(query);
   }
-  // Public: view single product
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.productsService.findById(id);
   }
 
-  // Admin-only: create
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  async create(@Body() dto: CreateProductDto, @CurrentUser() user: any) {
-    return this.productsService.create(dto, user.userId);
+  @UseInterceptors(FilesInterceptor('images', 10))
+  async create(
+    @Body() dto: CreateProductDto,
+    @UploadedFiles() files: Express.Multer.File[],
+    @CurrentUser() user: any,
+  ) {
+    const parsedDto = {
+      ...dto,
+      price: Number(dto.price),
+      stock: Number(dto.stock),
+      categoryId: dto.categoryId,
+      images: dto.images ?? [],
+      colors: dto.colors ?? [],
+    };
+
+    return this.productsService.create(parsedDto, user.userId, files);
   }
 
-  // Admin-only: update
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  async update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
-    return this.productsService.update(id, dto);
+  @UseInterceptors(FilesInterceptor('images', 10))
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateProductDto,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    const parsedDto = {
+      ...dto,
+      price: Number(dto.price),
+      stock: Number(dto.stock),
+
+      colors: dto.colors ?? [],
+    };
+
+    return this.productsService.update(id, parsedDto, files);
   }
 
-  // Admin-only: delete
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
