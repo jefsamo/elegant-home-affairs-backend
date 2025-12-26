@@ -20,6 +20,10 @@ export class DiscountService {
     private discountModel: Model<Discount>,
   ) {}
 
+  async findAll() {
+    return await this.discountModel.find().exec();
+  }
+
   async create(dto: CreateDiscountDto) {
     const code = dto.name.trim().toUpperCase();
     return this.discountModel.create({ ...dto, name: code });
