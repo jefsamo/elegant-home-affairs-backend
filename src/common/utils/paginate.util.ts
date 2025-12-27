@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // src/common/utils/paginate.util.ts
 import { Model, FilterQuery, Document } from 'mongoose';
 import { PaginationQueryDto } from '../dto/pagination-query.dto';

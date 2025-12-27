@@ -188,4 +188,23 @@ export class PaystackService {
       throw new UnauthorizedException('Invalid webhook signature');
     return true;
   }
+
+  async refundTransaction(args: { transaction: string; amount?: number }) {
+    // Paystack: POST /refund with transaction (id or reference) :contentReference[oaicite:1]{index=1}
+    const url = `${this.baseUrl}/refund`;
+
+    const payload: any = { transaction: args.transaction };
+    if (args.amount != null) payload.amount = args.amount;
+
+    const resp = await firstValueFrom(
+      this.http.post(url, payload, { headers: this.headers }),
+    );
+
+    // Paystack usually returns: { status: true, message, data: {...} }
+    if (resp.data?.status !== true) {
+      throw new BadRequestException(resp.data?.message ?? 'Refund failed');
+    }
+
+    return resp.data;
+  }
 }
