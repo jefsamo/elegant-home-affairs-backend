@@ -196,12 +196,10 @@ export class OrdersService {
     orderId: string,
     currentUser: { userId: string; roles: string[] },
   ) {
-    console.log(currentUser);
     const order = await this.orderModel.findById(orderId).exec();
     if (!order) throw new NotFoundException('Order not found');
 
     const isAdmin = currentUser.roles?.includes('admin');
-    console.log(isAdmin);
     if (!isAdmin && String(order.userId) !== currentUser.userId) {
       throw new ForbiddenException('Not allowed to view this order');
     }

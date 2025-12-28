@@ -35,7 +35,6 @@ export class UsersController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: { userId: string }) {
-    console.log(user);
     return this.usersService.getMe(user.userId);
   }
 
