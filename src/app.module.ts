@@ -11,6 +11,7 @@ import { CategoryModule } from './category/category.module';
 import { PaymentModule } from './payment/payment.module';
 import { OrderModule } from './order/order.module';
 import { DiscountModule } from './discount/discount.module';
+import { ShippingModule } from './shipping/shipping.module';
 
 @Module({
   //
@@ -31,6 +32,7 @@ import { DiscountModule } from './discount/discount.module';
     PaymentModule,
     OrderModule,
     DiscountModule,
+    ShippingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
