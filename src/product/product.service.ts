@@ -32,6 +32,7 @@ export class ProductService {
     if (!category) throw new NotFoundException('Category not found');
 
     // const uploadedUrls = files?.map((f) => `/uploads/${f.filename}`) ?? [];
+    // const uploadedUrls = files?.map((f) => `/uploads/${f.filename}`) ?? [];
 
     const product = new this.productModel({
       ...dto,
