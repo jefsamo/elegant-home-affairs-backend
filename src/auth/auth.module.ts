@@ -11,6 +11,7 @@ import {
 } from './schemas/refresh-token.schema';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+import { User, UserSchema } from 'src/users/schemas/user.schema';
 
 @Module({
   imports: [
@@ -19,7 +20,9 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     MailModule,
     MongooseModule.forFeature([
       { name: RefreshToken.name, schema: RefreshTokenSchema },
+      { name: User.name, schema: UserSchema },
     ]),
+    // MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   providers: [
     AuthService,

@@ -6,7 +6,9 @@
 // src/auth/auth.service.ts
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
@@ -18,6 +20,10 @@ import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
+import { User, UserDocument } from 'src/users/schemas/user.schema';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +32,8 @@ export class AuthService {
     private jwt: JwtService,
     private config: ConfigService,
     private mailService: MailService,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
   ) {}
 
   private hashPassword(password: string): Promise<string> {
@@ -195,5 +203,48 @@ export class AuthService {
     await this.usersService.incrementTokenVersion(user._id.toString());
 
     return { message: 'Password reset successfully' };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.userModel
+      .findById(userId)
+      .select('+passwordHash')
+      .lean(false);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (dto.newPassword !== dto.confirmNewPassword) {
+      throw new BadRequestException('New passwords do not match');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
+    }
+
+    const isValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+
+    if (!isValid) {
+      throw new ForbiddenException('Current password is incorrect');
+    }
+
+    const saltRounds = 12;
+    const newHash = await bcrypt.hash(dto.newPassword, saltRounds);
+
+    user.passwordHash = newHash;
+
+    if (dto.logoutOtherSessions) {
+      user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+    }
+
+    await user.save();
+
+    return { message: 'Password updated successfully', status: true };
   }
 }
