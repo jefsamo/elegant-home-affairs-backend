@@ -86,47 +86,59 @@ export class OrdersService {
       }
     }
   }
-  async createFromPayment(args: {
+  async createFromPayment({
+    userId,
+    reference,
+    amount,
+    cart,
+    delivery,
+    discount = null,
+    shippingFee = 0,
+    shippingMethod = 'ship',
+  }: {
     userId: string;
     reference: string;
     amount: number;
     cart: { productId: string; quantity: number; price: number }[];
     delivery: any;
     discount?: { discountId: string; code: string; percentage: number } | null;
+    shippingFee?: number;
+    shippingMethod?: 'pickup' | 'ship';
   }) {
-    const subtotal = args.cart.reduce(
-      (sum, i) => sum + i.price * i.quantity,
-      0,
-    );
+    const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-    const shipping = subtotal === 0 ? 0 : 499;
+    const shipping = shippingMethod === 'pickup' ? 0 : shippingFee;
+    console.log('shipping', shipping);
 
-    const discountPct = args.discount?.percentage ?? 0;
-
+    const discountPct = discount?.percentage ?? 0;
     const discountAmount = Math.round((subtotal * discountPct) / 100);
 
+    // if your intent is "subtotal + shipping - discount"
     const total = Math.max(subtotal + shipping - discountAmount, 0);
+    console.log('total', total);
+
     const totalAfterDiscount = total - discountAmount;
-    const totalAndDiscountPlusShipping = total + shipping - discountAmount;
+    const totalAndDiscountPlusShipping = total + shipping + discountAmount;
 
     const payload = {
-      userId: args.userId,
-      items: args.cart,
+      userId,
+      items: cart,
       subtotal,
       shipping,
-      discountId: args.discount?.discountId ?? null,
-      discountCode: args.discount?.code ?? null,
+      discountId: discount?.discountId ?? null,
+      discountCode: discount?.code ?? null,
       discountPercentage: discountPct,
       discountAmount,
       totalAfterDiscount,
       totalAndDiscountPlusShipping,
       total,
-      paymentReference: args.reference,
+      paymentReference: reference,
       paymentStatus: 'paid' as const,
-      delivery: args.delivery,
+      delivery,
+      deliveryMode: shippingMethod,
     };
 
-    if (total !== args.amount) {
+    if (total !== amount) {
       return this.orderModel.create({
         ...payload,
         orderStatus: 'needs_review',

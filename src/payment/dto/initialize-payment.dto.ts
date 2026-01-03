@@ -68,11 +68,19 @@ export class InitializePaymentDto {
 
   @IsOptional()
   @IsObject()
+  shipping: any;
+
+  @IsOptional()
+  @IsObject()
   metadata?: Record<string, any>;
 
   @IsOptional()
   @IsString()
   discountCode?: string;
+
+  @IsOptional()
+  @IsString()
+  deliveryMode?: string;
 
   @IsOptional()
   @IsString()

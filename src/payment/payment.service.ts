@@ -81,7 +81,7 @@ export class PaystackService {
       reference,
       accessCode: access_code,
       status: 'initialized',
-      amount: dto.amount,
+      // amount: dto.amount,
       createdAt: new Date().toISOString(),
       userId,
       checkoutSnapshot: {
@@ -96,6 +96,7 @@ export class PaystackService {
             }
           : null,
       },
+      ...dto,
     } as any);
 
     return resp.data; // { status, message, data: { authorization_url, access_code, reference } }

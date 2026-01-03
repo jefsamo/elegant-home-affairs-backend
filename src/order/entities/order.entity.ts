@@ -51,6 +51,8 @@ export class Order {
 
   @Prop({ default: null, trim: true })
   discountCode?: string;
+  @Prop({ default: 'ship' })
+  shippingMethod?: string;
 
   @Prop({ default: 0 })
   discountPercentage?: number;

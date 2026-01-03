@@ -104,7 +104,6 @@ export class AuthController {
     @CurrentUser() user: { userId: string },
     @Body() dto: ChangePasswordDto,
   ) {
-    console.log(user);
     return this.authService.changePassword(user.userId, dto);
   }
 }
