@@ -5,6 +5,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -27,6 +29,7 @@ export class PaystackService {
   constructor(
     private readonly http: HttpService,
     @InjectModel(Payment.name) private paymentModel: Model<Payment>,
+    @Inject(forwardRef(() => OrdersService))
     private readonly ordersService: OrdersService,
   ) {
     if (!this.secretKey) {
@@ -210,6 +213,34 @@ export class PaystackService {
     return resp.data;
   }
 
+  async createRefund(args: {
+    transaction: string; // transaction reference or id
+    amount?: number; // kobo (optional)
+    currency?: string; // optional
+    customer_note?: string;
+    merchant_note?: string;
+  }) {
+    const url = `${this.baseUrl}/refund`;
+
+    const payload: any = {
+      transaction: args.transaction,
+    };
+
+    if (args.amount != null) payload.amount = args.amount;
+    if (args.currency) payload.currency = args.currency;
+    if (args.customer_note) payload.customer_note = args.customer_note;
+    if (args.merchant_note) payload.merchant_note = args.merchant_note;
+
+    const resp = await firstValueFrom(
+      this.http.post(url, payload, { headers: this.headers }),
+    );
+
+    if (!resp.data?.status) {
+      throw new BadRequestException('Paystack refund request failed');
+    }
+
+    return resp.data; // includes data about refund
+  }
   async findPaginated(args: {
     query: ListPaymentsQueryDto;
     userId?: string; // undefined for admin

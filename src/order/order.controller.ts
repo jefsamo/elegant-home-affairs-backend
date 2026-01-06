@@ -1,9 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Body,
   Controller,
   Get,
   Param,
   Patch,
+  Post,
   // Post,
   Query,
   UseGuards,
@@ -15,6 +18,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { OrderQueryDto } from './dto/order-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { RefundOrderDto } from './entities/refund-order.dto';
 
 @Controller('order')
 export class OrderController {
@@ -55,6 +59,21 @@ export class OrderController {
   @Roles('admin')
   cancel(@Param('id') id: string) {
     return this.orderService.cancel(id);
+  }
+
+  @Post(':orderId/refund')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  refundOrder(
+    @Param('orderId') orderId: string,
+    @Body() dto: RefundOrderDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.orderService.refundOrder({
+      orderId,
+      adminUserId: user?.userId,
+      dto,
+    });
   }
 
   // @Post(':id/refund')

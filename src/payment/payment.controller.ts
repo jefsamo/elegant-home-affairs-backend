@@ -57,12 +57,14 @@ export class PaymentController {
       userId: isAdmin ? undefined : user.userId,
     });
   }
+
   @Post('initialize')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('customer')
   initialize(@Body() dto: InitializePaymentDto, @CurrentUser() user: any) {
     return this.paystack.initializePaystack(user?.userId, dto);
   }
+
   @Post('create-page')
   createPaystackPaymentPage(@Body() dto: CreatePageDto) {
     return this.paystack.paymentPage(dto);
@@ -74,6 +76,7 @@ export class PaymentController {
   verify(@Param('reference') reference: string, @CurrentUser() user: any) {
     return this.paystack.verifyPaystackAndCreateOrder(user?.userId, reference);
   }
+
   @Get('page/:id')
   fetchPage(@Param('id') id: number) {
     return this.paystack.fetchPage(id);

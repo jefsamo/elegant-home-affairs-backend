@@ -59,6 +59,19 @@ export class Order {
 
   @Prop({ default: 0 })
   discountAmount?: number;
+
+  @Prop({ type: Object, default: null })
+  refund?: {
+    provider: 'paystack';
+    refundReference?: string;
+    transactionReference?: string;
+    amount?: number;
+    status?: string;
+    customerNote?: string;
+    merchantNote?: string;
+    initiatedAt?: Date;
+    raw?: any;
+  };
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);
