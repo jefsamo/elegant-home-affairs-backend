@@ -25,6 +25,9 @@ export class Product {
   @Prop({ trim: true })
   description: string;
 
+  @Prop({ trim: true })
+  instagramUrl?: string;
+
   @Prop({ default: false })
   isTrending: boolean;
 

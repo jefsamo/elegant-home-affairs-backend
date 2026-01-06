@@ -17,6 +17,10 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  instagramUrl?: string;
+
   @IsNumber()
   @Min(0)
   price: number;
