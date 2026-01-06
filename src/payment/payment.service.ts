@@ -12,10 +12,11 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { CreatePageDto } from './dto/create-page.dto';
 import { OrdersService } from 'src/order/order.service';
-import { Payment } from './dto/payment.schema';
+import { Payment, PaymentDocument } from './dto/payment.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
+import { ListPaymentsQueryDto } from './dto/list-payments.query';
 
 @Injectable()
 export class PaystackService {
@@ -207,5 +208,49 @@ export class PaystackService {
     }
 
     return resp.data;
+  }
+
+  async findPaginated(args: {
+    query: ListPaymentsQueryDto;
+    userId?: string; // undefined for admin
+  }) {
+    const { query, userId } = args;
+
+    const page = Math.max(Number(query.page ?? 1), 1);
+    const limit = Math.min(Math.max(Number(query.limit ?? 10), 1), 50);
+    const skip = (page - 1) * limit;
+
+    const filter: FilterQuery<PaymentDocument> = {};
+    if (userId) filter.userId = userId;
+    if (query.status) filter.status = query.status;
+
+    if (query.search?.trim()) {
+      filter.reference = { $regex: query.search.trim(), $options: 'i' };
+    }
+
+    const [items, total] = await Promise.all([
+      this.paymentModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      this.paymentModel.countDocuments(filter),
+    ]);
+
+    return {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      items,
+    };
+  }
+
+  async findOneForUser(args: { id: string; userId?: string }) {
+    const { id, userId } = args;
+    const filter: any = { _id: id };
+    if (userId) filter.userId = userId;
+    return this.paymentModel.findOne(filter).lean();
   }
 }

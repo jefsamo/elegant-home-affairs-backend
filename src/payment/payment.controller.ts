@@ -11,6 +11,7 @@ import {
   Delete,
   Req,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { PaystackService } from './payment.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -23,11 +24,39 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
+import { ListPaymentsQueryDto } from './dto/list-payments.query';
 
 @Controller('payment/paystack')
 export class PaymentController {
   constructor(private readonly paystack: PaystackService) {}
-  //
+
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer', 'admin')
+  async findAll(
+    @Query() query: ListPaymentsQueryDto,
+    @CurrentUser() user: { userId: string; roles: string[] },
+  ) {
+    const isAdmin = user.roles?.includes('admin');
+    return this.paystack.findPaginated({
+      query,
+      userId: isAdmin ? undefined : user.userId,
+    });
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer', 'admin')
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: { userId: string; roles: string[] },
+  ) {
+    const isAdmin = user.roles?.includes('admin');
+    return this.paystack.findOneForUser({
+      id,
+      userId: isAdmin ? undefined : user.userId,
+    });
+  }
   @Post('initialize')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('customer')
