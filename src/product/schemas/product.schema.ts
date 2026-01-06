@@ -25,7 +25,10 @@ export class Product {
   @Prop({ trim: true })
   description: string;
 
-  @Prop({ trim: true })
+  @Prop({
+    trim: true,
+    default: 'https://www.instagram.com/home_affairs.ng?igsh=N2pyNjNrY2Jyd2Vr',
+  })
   instagramUrl?: string;
 
   @Prop({ default: false })

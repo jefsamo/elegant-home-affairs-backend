@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 // src/mail/mail.service.ts
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

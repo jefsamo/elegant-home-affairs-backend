@@ -38,6 +38,12 @@ export class User {
 
   @Prop({ default: 0 })
   tokenVersion: number;
+
+  @Prop()
+  resetPasswordTokenHash?: string;
+
+  @Prop()
+  resetPasswordExpiresAt?: Date;
   _id: any;
 }
 

@@ -26,7 +26,7 @@ export class ProductService {
   async create(
     dto: CreateProductDto,
     userId: string,
-    files: Express.Multer.File[],
+    // files: Express.Multer.File[],
   ) {
     const category = await this.categoriesService.findById(dto.categoryId);
     if (!category) throw new NotFoundException('Category not found');
