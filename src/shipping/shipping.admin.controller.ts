@@ -27,7 +27,7 @@ import { ShippingAdminService } from './shipping.admin.service';
 @Controller('admin')
 export class ShippingAdminController {
   constructor(private readonly admin: ShippingAdminService) {}
-
+  @Roles('customer')
   @Get('states')
   listStates() {
     return this.admin.listStates();
