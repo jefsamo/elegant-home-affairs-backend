@@ -5,10 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ListUsersQueryDto } from './dto/list-users.query';
 
 @Injectable()
 export class UsersService {
@@ -84,5 +85,50 @@ export class UsersService {
 
     if (!user) throw new NotFoundException('User not found');
     return user;
+  }
+
+  async findPaginated(query: ListUsersQueryDto) {
+    const page = Math.max(Number(query.page ?? 1), 1);
+    const limit = Math.min(Math.max(Number(query.limit ?? 10), 1), 50);
+    const skip = (page - 1) * limit;
+
+    const filter: FilterQuery<User> = {};
+
+    if (query.isActive) filter.isActive = query.isActive === 'true';
+    if (query.isEmailVerified)
+      filter.isEmailVerified = query.isEmailVerified === 'true';
+
+    if (query.search?.trim()) {
+      const s = query.search.trim();
+      filter.$or = [
+        { email: { $regex: s, $options: 'i' } },
+        { firstName: { $regex: s, $options: 'i' } },
+        { lastName: { $regex: s, $options: 'i' } },
+        { phoneNumber: { $regex: s, $options: 'i' } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.userModel
+        .find(filter)
+        .select('-passwordHash') // ✅ never send password hash
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      this.userModel.countDocuments(filter),
+    ]);
+
+    return {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      items,
+    };
+  }
+
+  async findOneById(id: string) {
+    return this.userModel.findById(id).select('-passwordHash').lean();
   }
 }

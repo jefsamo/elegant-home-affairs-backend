@@ -9,6 +9,8 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
+  NotFoundException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -17,6 +19,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { ListUsersQueryDto } from './dto/list-users.query';
 
 @Controller('users')
 export class UsersController {
@@ -28,8 +31,19 @@ export class UsersController {
   }
 
   @Get()
-  findAll() {
-    // return this.usersService.findAll();
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async findAll(@Query() query: ListUsersQueryDto) {
+    return this.usersService.findPaginated(query);
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async findOne(@Param('id') id: string) {
+    const user = await this.usersService.findOneById(id);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
   @Get('me')
@@ -45,12 +59,6 @@ export class UsersController {
     @CurrentUser() user: { userId: string },
   ) {
     return this.usersService.updateMe(user.userId, dto);
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    console.log(id);
-    // return this.usersService.findOne(+id);
   }
 
   @Patch(':id')
