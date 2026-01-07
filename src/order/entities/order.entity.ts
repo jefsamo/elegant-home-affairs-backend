@@ -6,8 +6,8 @@ export type OrderDocument = HydratedDocument<Order>;
 
 @Schema({ timestamps: true })
 export class Order {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId: string;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  userId?: string;
 
   @Prop({
     type: [
@@ -31,7 +31,7 @@ export class Order {
   total: number; // in kobo
   @Prop({ required: true })
   totalAfterDiscount: number;
-  @Prop({ required: true })
+  @Prop({ required: false })
   totalAndDiscountPlusShipping?: number;
 
   @Prop({ required: true })
@@ -59,6 +59,18 @@ export class Order {
 
   @Prop({ default: 0 })
   discountAmount?: number;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null })
+  createdBy?: string; // admin who placed it
+
+  @Prop({ default: 'customer' })
+  source?: 'customer' | 'admin';
+
+  @Prop({ default: 'paystack' })
+  paymentProvider?: 'paystack' | 'manual';
+
+  @Prop({ default: null })
+  adminNote?: string;
 
   @Prop({ type: Object, default: null })
   refund?: {

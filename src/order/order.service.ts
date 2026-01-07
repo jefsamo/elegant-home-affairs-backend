@@ -22,6 +22,9 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { PaystackService } from 'src/payment/payment.service';
 import { Payment } from 'src/payment/dto/payment.schema';
 import { RefundOrderDto } from './entities/refund-order.dto';
+import { DiscountService } from 'src/discount/discount.service';
+import { User } from 'src/users/schemas/user.schema';
+import { AdminCreateOrderDto } from './entities/admin-create-order.dto';
 
 export type PaginatedOrders = {
   items: Order[];
@@ -38,10 +41,12 @@ export class OrdersService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<Order>,
     @InjectModel(Product.name) private productModel: Model<Product>,
+    @InjectModel(User.name) private userModel: Model<User>,
     @InjectConnection() private connection: Connection,
     @InjectModel(Payment.name) private readonly paymentModel: Model<Payment>,
     @Inject(forwardRef(() => PaystackService))
     private readonly paystack: PaystackService,
+    private readonly discountService: DiscountService,
   ) {}
 
   private async decrementStockForOrderItems(
@@ -377,5 +382,106 @@ export class OrdersService {
       order: order.toObject(),
       refund: refundData,
     };
+  }
+
+  async adminCreateOrder(dto: AdminCreateOrderDto, adminId: string) {
+    // 1) Load user exists
+    const user = await this.userModel.findById(dto.userId).lean();
+    // if (!user) throw new NotFoundException('User not found');
+
+    // 2) Fetch products for pricing
+    const productIds = dto.items.map((i) => i.productId);
+    const products = await this.productModel
+      .find({ _id: { $in: productIds } })
+      .select('_id price stock name')
+      .lean();
+
+    const byId = new Map(products.map((p) => [String(p._id), p]));
+
+    // 3) Build final items with DB price
+    const items = dto.items.map((i) => {
+      const p = byId.get(i.productId);
+      if (!p)
+        throw new BadRequestException(`Invalid productId: ${i.productId}`);
+      if (i.quantity < 1)
+        throw new BadRequestException('Quantity must be >= 1');
+      if (p.stock < i.quantity)
+        throw new BadRequestException(`Insufficient stock for ${p.name}`);
+
+      return {
+        productId: i.productId,
+        quantity: i.quantity,
+        price: p.price, // in kobo in your system
+      };
+    });
+
+    // 4) Compute subtotal/shipping/discount/total
+    const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+    const shipping = Math.max(Number(dto.shippingKobo ?? 0), 0);
+
+    let discountPercentage = 0;
+    let discountAmount = 0;
+    let discountId: string | undefined;
+    let discountCode: string | undefined;
+
+    if (dto.discountCode?.trim()) {
+      const disc = await this.discountService.validate(dto.discountCode.trim());
+      discountPercentage = disc.percentage;
+      discountId = disc.discountId;
+      discountCode = disc.code;
+      discountAmount = Math.round((subtotal * discountPercentage) / 100);
+    }
+
+    const totalAfterDiscount = Math.max(subtotal - discountAmount, 0);
+    const total = Math.max(totalAfterDiscount + shipping, 0);
+
+    // 5) Reference: if manual/unpaid, still generate a unique reference for tracking
+    const paymentReference =
+      dto.paymentProvider === 'paystack'
+        ? `ADM_${Date.now()}_${Math.random().toString(16).slice(2)}`
+        : `MAN_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+    // 6) Create order
+    const order = await this.orderModel.create({
+      userId: dto.userId ?? null,
+      createdBy: adminId,
+      source: 'admin',
+
+      items,
+
+      subtotal,
+      shipping,
+      total,
+      totalAfterDiscount,
+      totalAndDiscountPlusShipping: total,
+
+      paymentReference,
+      paymentProvider: dto.paymentProvider,
+      paymentStatus: dto.paymentStatus,
+      orderStatus: 'processing',
+
+      delivery: dto.delivery,
+      shippingMethod: dto.deliveryMode,
+
+      discountId,
+      discountCode,
+      discountPercentage,
+      discountAmount,
+
+      adminNote: dto.adminNote ?? null,
+    });
+
+    // 7) Reduce stock (transaction recommended)
+    // If you’re on Mongo replica set, use session transaction:
+    await Promise.all(
+      items.map((it) =>
+        this.productModel.updateOne(
+          { _id: it.productId },
+          { $inc: { stock: -it.quantity } },
+        ),
+      ),
+    );
+
+    return order;
   }
 }

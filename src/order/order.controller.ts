@@ -19,6 +19,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { OrderQueryDto } from './dto/order-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { RefundOrderDto } from './entities/refund-order.dto';
+import { AdminCreateOrderDto } from './entities/admin-create-order.dto';
 
 @Controller('order')
 export class OrderController {
@@ -37,6 +38,16 @@ export class OrderController {
       query,
       userId: isAdmin ? undefined : user.userId,
     });
+  }
+
+  @Post('create-order/guest')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async adminCreateOrder(
+    @Body() dto: AdminCreateOrderDto,
+    @CurrentUser() admin: { userId: string },
+  ) {
+    return this.orderService.adminCreateOrder(dto, admin.userId);
   }
 
   @Get(':id')

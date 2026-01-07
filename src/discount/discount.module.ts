@@ -12,5 +12,6 @@ import { Discount, DiscountSchema } from './schemas/discount.schema';
   ],
   controllers: [DiscountController],
   providers: [DiscountService],
+  exports: [DiscountService],
 })
 export class DiscountModule {}
