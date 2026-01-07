@@ -37,6 +37,23 @@ export class UsersController {
     return this.usersService.findPaginated(query);
   }
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @Roles('admin', 'customer')
+  me(@CurrentUser() user: { userId: string }) {
+    return this.usersService.getMe(user.userId);
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @Roles('admin', 'customer')
+  updateMe(
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() user: { userId: string },
+  ) {
+    return this.usersService.updateMe(user.userId, dto);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
@@ -45,22 +62,6 @@ export class UsersController {
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
-
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  me(@CurrentUser() user: { userId: string }) {
-    return this.usersService.getMe(user.userId);
-  }
-
-  @Patch('me')
-  @UseGuards(JwtAuthGuard)
-  updateMe(
-    @Body() dto: UpdateUserDto,
-    @CurrentUser() user: { userId: string },
-  ) {
-    return this.usersService.updateMe(user.userId, dto);
-  }
-
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'customer')

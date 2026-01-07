@@ -22,23 +22,27 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { ShippingAdminService } from './shipping.admin.service';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
 @Controller('admin')
 export class ShippingAdminController {
   constructor(private readonly admin: ShippingAdminService) {}
-  @Roles('customer')
+
   @Get('states')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'customer')
   listStates() {
     return this.admin.listStates();
   }
 
   @Post('states')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   upsertState(@Body() dto: UpsertStateDto) {
     return this.admin.upsertState(dto);
   }
 
   @Delete('states/:code')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   deleteState(@Param('code') code: string) {
     return this.admin.deleteState(code);
   }
@@ -55,16 +59,22 @@ export class ShippingAdminController {
   }
 
   @Post('lagos-options')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   createLagos(@Body() dto: CreateLagosOptionDto) {
     return this.admin.createLagosOption(dto);
   }
 
   @Patch('lagos-options/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   updateLagos(@Param('id') id: string, @Body() dto: UpdateLagosOptionDto) {
     return this.admin.updateLagosOption(id, dto);
   }
 
   @Delete('lagos-options/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   deleteLagos(@Param('id') id: string) {
     return this.admin.deleteLagosOption(id);
   }
@@ -81,16 +91,22 @@ export class ShippingAdminController {
   }
 
   @Post('shipping-methods')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   createMethod(@Body() dto: CreateShippingMethodDto) {
     return this.admin.createShippingMethod(dto);
   }
 
   @Patch('shipping-methods/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   updateMethod(@Param('id') id: string, @Body() dto: UpdateShippingMethodDto) {
     return this.admin.updateShippingMethod(id, dto);
   }
 
   @Delete('shipping-methods/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   deleteMethod(@Param('id') id: string) {
     return this.admin.deleteShippingMethod(id);
   }

@@ -60,7 +60,7 @@ export class PaymentController {
 
   @Post('initialize')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('customer')
+  @Roles('customer', 'admin')
   initialize(@Body() dto: InitializePaymentDto, @CurrentUser() user: any) {
     return this.paystack.initializePaystack(user?.userId, dto);
   }
@@ -72,7 +72,7 @@ export class PaymentController {
 
   @Get('verify/:reference')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('customer')
+  @Roles('customer', 'admin')
   verify(@Param('reference') reference: string, @CurrentUser() user: any) {
     return this.paystack.verifyPaystackAndCreateOrder(user?.userId, reference);
   }

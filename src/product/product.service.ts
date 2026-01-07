@@ -24,20 +24,12 @@ export class ProductService {
     private categoriesService: CategoryService,
   ) {}
 
-  async create(
-    dto: CreateProductDto,
-    userId: string,
-    files: Express.Multer.File[],
-  ) {
+  async create(dto: CreateProductDto, userId: string) {
     const category = await this.categoriesService.findById(dto.categoryId);
     if (!category) throw new NotFoundException('Category not found');
 
-    // const uploadedUrls = files?.map((f) => `/uploads/${f.filename}`) ?? [];
-    // const uploadedUrls = files?.map((f) => `/uploads/${f.filename}`) ?? [];
-
     const product = new this.productModel({
       ...dto,
-      // images: uploadedUrls,
       createdBy: userId,
     });
 

@@ -56,7 +56,7 @@ export class ProductController {
       colors: dto.colors ?? [],
     };
 
-    return this.productsService.create(parsedDto, user.userId, files);
+    return this.productsService.create(parsedDto, user.userId);
   }
 
   @Patch(':id')

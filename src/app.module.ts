@@ -12,6 +12,7 @@ import { PaymentModule } from './payment/payment.module';
 import { OrderModule } from './order/order.module';
 import { DiscountModule } from './discount/discount.module';
 import { ShippingModule } from './shipping/shipping.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   //
@@ -33,6 +34,7 @@ import { ShippingModule } from './shipping/shipping.module';
     OrderModule,
     DiscountModule,
     ShippingModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
