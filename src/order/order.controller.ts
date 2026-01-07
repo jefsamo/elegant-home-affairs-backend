@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
@@ -19,7 +21,9 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { OrderQueryDto } from './dto/order-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { RefundOrderDto } from './entities/refund-order.dto';
-import { AdminCreateOrderDto } from './entities/admin-create-order.dto';
+import { AdminCreateOrderDto } from './dto/admin-create-order.dto';
+import { AdminInitPaystackDto } from './dto/admin-init-paystack.dto';
+import { InitializePaymentDto } from 'src/payment/dto/initialize-payment.dto';
 
 @Controller('order')
 export class OrderController {
@@ -48,6 +52,17 @@ export class OrderController {
     @CurrentUser() admin: { userId: string },
   ) {
     return this.orderService.adminCreateOrder(dto, admin.userId);
+  }
+
+  @Post('/create-paystack-link')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async adminCreatePaystackLink(
+    @Body() dto: AdminInitPaystackDto,
+    @Body() dto2: InitializePaymentDto,
+    @CurrentUser() admin: { userId: string },
+  ) {
+    return this.orderService.adminCreatePaystackLink(dto, admin.userId, dto2);
   }
 
   @Get(':id')

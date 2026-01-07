@@ -14,7 +14,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { CategoryService } from 'src/category/category.service';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
-import { paginate } from 'src/common/utils/paginate.util';
+import { paginate, paginateV2 } from 'src/common/utils/paginate.util';
 
 @Injectable()
 export class ProductService {
@@ -41,7 +41,7 @@ export class ProductService {
   ): Promise<PaginatedResult<Product>> {
     const filter = {};
 
-    return paginate<ProductDocument>(this.productModel, pagination, filter);
+    return paginateV2<ProductDocument>(this.productModel, pagination, filter);
   }
 
   async findById(id: string): Promise<Product> {

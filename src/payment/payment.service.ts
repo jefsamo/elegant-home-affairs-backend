@@ -105,6 +105,56 @@ export class PaystackService {
 
     return resp.data; // { status, message, data: { authorization_url, access_code, reference } }
   }
+  async initializePaystackV2(
+    userId: string,
+    dto: InitializePaymentDto,
+    // dto2: AdminInitPaystackDto,
+  ) {
+    const url = `${this.baseUrl}/transaction/initialize`;
+
+    const payload = {
+      email: dto.email,
+      amount: dto.amount, // kobo
+      metadata: {
+        ...dto.metadata,
+        userId,
+      },
+    };
+
+    const resp = await firstValueFrom(
+      this.http.post(url, payload, { headers: this.headers }),
+    );
+
+    const { reference, access_code } = resp.data?.data ?? {};
+    if (!reference || !access_code) {
+      throw new BadRequestException('Paystack initialization failed');
+    }
+
+    // Save payment record + checkout snapshot for later Order creation
+    await this.paymentModel.create({
+      reference,
+      accessCode: access_code,
+      status: 'initialized',
+      // amount: dto.amount,
+      createdAt: new Date().toISOString(),
+      userId,
+      checkoutSnapshot: {
+        cart: dto.cart,
+        delivery: dto.delivery,
+        metadata: dto.metadata ?? {},
+        discount: dto.discountCode
+          ? {
+              discountCode: dto.discountCode,
+              discountId: dto.discountId,
+              discountPercentage: dto.discountPercentage,
+            }
+          : null,
+      },
+      ...dto,
+    } as any);
+
+    return resp.data; // { status, message, data: { authorization_url, access_code, reference } }
+  }
 
   async verifyPaystackAndCreateOrder(userId: string, reference: string) {
     // Find payment

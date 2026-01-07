@@ -24,7 +24,9 @@ import { Payment } from 'src/payment/dto/payment.schema';
 import { RefundOrderDto } from './entities/refund-order.dto';
 import { DiscountService } from 'src/discount/discount.service';
 import { User } from 'src/users/schemas/user.schema';
-import { AdminCreateOrderDto } from './entities/admin-create-order.dto';
+import { AdminCreateOrderDto } from './dto/admin-create-order.dto';
+import { AdminInitPaystackDto } from './dto/admin-init-paystack.dto';
+import { InitializePaymentDto } from 'src/payment/dto/initialize-payment.dto';
 
 export type PaginatedOrders = {
   items: Order[];
@@ -386,7 +388,7 @@ export class OrdersService {
 
   async adminCreateOrder(dto: AdminCreateOrderDto, adminId: string) {
     // 1) Load user exists
-    const user = await this.userModel.findById(dto.userId).lean();
+    // const user = await this.userModel.findById(dto.userId).lean();
     // if (!user) throw new NotFoundException('User not found');
 
     // 2) Fetch products for pricing
@@ -483,5 +485,106 @@ export class OrdersService {
     );
 
     return order;
+  }
+
+  async adminCreatePaystackLink(
+    dto: AdminInitPaystackDto,
+    adminId: string,
+    dto2: InitializePaymentDto,
+  ) {
+    // 1) compute items from DB (never trust price from client)
+    const productIds = dto.items.map((i) => i.productId);
+    const products = await this.productModel
+      .find({ _id: { $in: productIds } })
+      .select('_id price stock name')
+      .lean();
+
+    const byId = new Map(products.map((p) => [String(p._id), p]));
+
+    const items = dto.items.map((i) => {
+      const p = byId.get(i.productId);
+      if (!p)
+        throw new BadRequestException(`Invalid productId: ${i.productId}`);
+      if (i.quantity < 1)
+        throw new BadRequestException('Quantity must be >= 1');
+      if (p.stock < i.quantity)
+        throw new BadRequestException(`Insufficient stock for ${p.name}`);
+      return { productId: i.productId, quantity: i.quantity, price: p.price };
+    });
+
+    const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+    const shipping =
+      dto.deliveryMode === 'pickup'
+        ? 0
+        : Math.max(Number(dto.shippingKobo || 0), 0);
+
+    // 2) optional discount (validate server-side)
+    let discountAmount = 0;
+    let discountPercentage = 0;
+    let discountId: string | undefined;
+    let discountCode: string | undefined;
+
+    if (dto.discountCode?.trim()) {
+      const disc = await this.discountService.validate(dto.discountCode.trim());
+      discountPercentage = disc.percentage;
+      discountId = disc.discountId;
+      discountCode = disc.code;
+      discountAmount = Math.round((subtotal * discountPercentage) / 100);
+    }
+
+    const totalAfterDiscount = Math.max(subtotal - discountAmount, 0);
+    const total = Math.max(totalAfterDiscount + shipping, 0);
+
+    // 3) Create the order FIRST (unpaid)
+    const order = await this.orderModel.create({
+      customerEmail: dto.customerEmail.trim().toLowerCase(),
+
+      // if you still keep userId required, make it optional OR store a dummy guest user id
+      // userId: ...
+
+      createdBy: adminId,
+      source: 'admin',
+
+      items,
+      subtotal,
+      shipping,
+      total,
+      totalAfterDiscount,
+      totalAndDiscountPlusShipping: total,
+
+      paymentStatus: 'unpaid',
+      orderStatus: 'processing',
+
+      delivery: dto.delivery,
+      shippingMethod: dto.deliveryMode,
+
+      discountId,
+      discountCode,
+      discountPercentage,
+      discountAmount,
+
+      adminNote: dto.adminNote ?? null,
+    });
+
+    // 4) Initialize Paystack using TOTAL (kobo)
+    const init = await this.paystack.initializePaystackV2('', dto2);
+
+    // 5) Save reference + link on the order
+    await this.orderModel.updateOne(
+      { _id: order._id },
+      {
+        $set: {
+          paymentReference: init.reference,
+          paystackAccessCode: init.access_code,
+          paystackAuthorizationUrl: init.authorization_url,
+        },
+      },
+    );
+
+    return {
+      orderId: String(order._id),
+      reference: init.reference,
+      authorizationUrl: init.authorization_url,
+    };
   }
 }

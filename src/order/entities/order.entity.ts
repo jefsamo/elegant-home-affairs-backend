@@ -40,6 +40,12 @@ export class Order {
   @Prop({ default: 'paid' })
   paymentStatus: string;
 
+  @Prop({ default: null })
+  paystackAccessCode?: string;
+
+  @Prop({ default: null })
+  paystackAuthorizationUrl?: string;
+
   @Prop({ default: 'processing' })
   orderStatus: string;
 
