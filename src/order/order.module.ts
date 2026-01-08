@@ -8,6 +8,8 @@ import { PaymentModule } from 'src/payment/payment.module';
 import { Payment, PaymentSchema } from 'src/payment/dto/payment.schema';
 import { DiscountModule } from 'src/discount/discount.module';
 import { User, UserSchema } from 'src/users/schemas/user.schema';
+import { DashboardService } from './dashboard.admin.service';
+import { DashboardController } from './dashboard.admin.controller';
 
 @Module({
   imports: [
@@ -20,8 +22,8 @@ import { User, UserSchema } from 'src/users/schemas/user.schema';
       { name: User.name, schema: UserSchema },
     ]),
   ],
-  controllers: [OrderController],
-  providers: [OrdersService],
+  controllers: [OrderController, DashboardController],
+  providers: [OrdersService, DashboardService],
   exports: [OrdersService],
 })
 export class OrderModule {}
