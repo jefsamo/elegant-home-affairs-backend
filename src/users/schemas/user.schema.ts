@@ -45,6 +45,9 @@ export class User {
   @Prop()
   resetPasswordExpiresAt?: Date;
   _id: any;
+
+  provider?: string;
+  providerId?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

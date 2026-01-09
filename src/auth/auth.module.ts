@@ -12,6 +12,8 @@ import {
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { User, UserSchema } from 'src/users/schemas/user.schema';
+import { PassportModule } from '@nestjs/passport';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -22,14 +24,13 @@ import { User, UserSchema } from 'src/users/schemas/user.schema';
       { name: RefreshToken.name, schema: RefreshTokenSchema },
       { name: User.name, schema: UserSchema },
     ]),
-    // MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    PassportModule,
   ],
   providers: [
     AuthService,
-    // UsersService,
-    // MailService,
     JwtAccessStrategy,
     JwtRefreshStrategy,
+    GoogleStrategy,
   ],
   controllers: [AuthController],
 })

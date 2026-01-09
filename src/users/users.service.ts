@@ -131,4 +131,43 @@ export class UsersService {
   async findOneById(id: string) {
     return this.userModel.findById(id).select('-passwordHash').lean();
   }
+
+  async findByEmail(email: string) {
+    return this.userModel.findOne({ email: email.toLowerCase() });
+  }
+
+  async createFromOAuth(dto: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    provider: 'google';
+    providerId: string;
+    avatarUrl?: string;
+  }) {
+    return this.userModel.create({
+      email: dto.email.toLowerCase(),
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      provider: dto.provider,
+      providerId: dto.providerId,
+      avatarUrl: dto.avatarUrl,
+      roles: ['customer'],
+      // password: undefined (or omit)
+    });
+  }
+
+  async linkOAuth(
+    userId: string,
+    dto: { provider: 'google'; providerId: string; avatarUrl?: string },
+  ) {
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        provider: dto.provider,
+        providerId: dto.providerId,
+        ...(dto.avatarUrl ? { avatarUrl: dto.avatarUrl } : {}),
+      },
+      { new: true },
+    );
+  }
 }

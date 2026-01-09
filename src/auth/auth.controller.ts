@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 // src/auth/auth.controller.ts
 import {
   Body,
@@ -7,6 +13,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -22,6 +29,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -105,5 +113,31 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(user.userId, dto);
+  }
+
+  // redirects user to Google
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  googleAuth() {
+    // passport handles redirect
+  }
+
+  // Google redirects back here
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(@Req() req: any, @Res() res: Response) {
+    // req.user comes from GoogleStrategy.validate()
+    const { accessToken, user } = await this.authService.loginWithGoogle(
+      req.user as any,
+    );
+
+    // Option A (simple): redirect with token in query
+    // (OK for dev; for prod prefer httpOnly cookie or a one-time code)
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return res.redirect(`${frontend}/oauth-success?token=${accessToken}`);
+
+    // Option B (better): set httpOnly cookie then redirect
+    // res.cookie('access_token', accessToken, { httpOnly: true, sameSite: 'lax', secure: false });
+    // return res.redirect(`${frontend}/oauth-success`);
   }
 }

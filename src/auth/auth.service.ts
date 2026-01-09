@@ -247,4 +247,47 @@ export class AuthService {
 
     return { message: 'Password updated successfully', status: true };
   }
+
+  async loginWithGoogle(googleUser: {
+    googleId: string;
+    email: string | null;
+    firstName: string;
+    lastName: string;
+    picture?: string | null;
+  }) {
+    if (!googleUser.email) {
+      throw new BadRequestException('Google account has no email');
+    }
+
+    // 1) Find existing user by email OR googleId
+    let user = await this.usersService.findByEmail(googleUser.email);
+
+    if (!user) {
+      // create a new user
+      user = await this.usersService.createFromOAuth({
+        email: googleUser.email,
+        firstName: googleUser.firstName,
+        lastName: googleUser.lastName,
+        provider: 'google',
+        providerId: googleUser.googleId,
+        avatarUrl: googleUser.picture ?? undefined,
+        // roles: ['customer'] // default
+      });
+    } else {
+      // optionally link googleId if not linked
+      if (!user.providerId || user.provider !== 'google') {
+        await this.usersService.linkOAuth(user._id.toString(), {
+          provider: 'google',
+          providerId: googleUser.googleId,
+          avatarUrl: googleUser.picture ?? undefined,
+        });
+      }
+    }
+
+    // 2) Issue your normal JWT
+    const payload = { sub: user._id.toString(), roles: user.roles };
+    const accessToken = await this.jwt.signAsync(payload);
+
+    return { accessToken, user };
+  }
 }
