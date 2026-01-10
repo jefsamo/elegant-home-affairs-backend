@@ -24,6 +24,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from 'src/users/schemas/user.schema';
+import { EmailService } from 'src/email/email.service';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +34,7 @@ export class AuthService {
     private jwt: JwtService,
     private config: ConfigService,
     private mailService: MailService,
+    private emailService: EmailService,
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
   ) {}
@@ -50,7 +53,7 @@ export class AuthService {
       secret: this.config.get<string>('JWT_ACCESS_SECRET'),
       expiresIn:
         this.config.get<JwtSignOptions['expiresIn']>('JWT_ACCESS_EXPIRES_IN') ??
-        '15m',
+        '50m',
     });
   }
 
@@ -162,36 +165,50 @@ export class AuthService {
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
-    const user = await this.usersService.findUserByEmail(dto.email);
-    // Always respond success to avoid user enumeration
+    const user = await this.userModel.findOne({
+      email: dto.email.toLowerCase().trim(),
+    });
     if (!user) return { message: 'If this email exists, a link was sent' };
 
-    const resetToken = this.jwt.sign(
-      { sub: user._id, type: 'password-reset' },
-      {
-        secret: this.config.get<string>('JWT_ACCESS_SECRET'),
-        expiresIn: '30m',
-      },
-    );
+    const token = randomBytes(32).toString('hex');
+    user.resetPasswordTokenHash = await this.hashPassword(token);
+    user.resetPasswordExpiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 mins
+    await user.save();
 
-    await this.mailService.sendPasswordReset(user.email, resetToken);
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontend}/reset-password?token=${token}&email=${encodeURIComponent(
+      user.email,
+    )}`;
 
-    return { message: 'If this email exists, a link was sent' };
+    try {
+      await this.emailService.sendResetPasswordEmail({
+        to: user.email,
+        firstName: user.firstName,
+        resetUrl,
+      });
+    } catch (e) {
+      console.error('RESEND_SEND_RESET_FAILED:', e);
+    }
+
+    return {
+      message: 'If this email exists, a link was sent',
+      status: 'success',
+    };
   }
 
   async resetPassword(dto: ResetPasswordDto) {
     let payload: any;
     try {
       payload = this.jwt.verify(dto.token, {
-        secret: this.config.get<string>('JWT_ACCESS_SECRET'),
+        secret: this.config.get<string>('JWT_PASSWORD_RESET_SECRET'),
       });
     } catch {
       throw new BadRequestException('Invalid or expired token');
     }
 
-    if (payload.type !== 'password-reset') {
-      throw new BadRequestException('Invalid token type');
-    }
+    // if (payload.type !== 'password-reset') {
+    //   throw new BadRequestException('Invalid token type');
+    // }
 
     const user = await this.usersService.findUserById(payload.sub);
     if (!user) throw new BadRequestException('User not found');
@@ -202,7 +219,7 @@ export class AuthService {
     // invalidate all existing refresh tokens
     await this.usersService.incrementTokenVersion(user._id.toString());
 
-    return { message: 'Password reset successfully' };
+    return { message: 'Password reset successfully', status: 'success' };
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
