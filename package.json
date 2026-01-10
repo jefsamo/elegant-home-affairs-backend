@@ -29,6 +29,8 @@
     "@nestjs/mongoose": "^11.0.3",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@react-email/components": "^1.0.4",
+    "@react-email/render": "^2.0.2",
     "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
@@ -42,6 +44,7 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.7.0",
     "rxjs": "^7.8.1",
     "streamifier": "^0.1.1"
   },

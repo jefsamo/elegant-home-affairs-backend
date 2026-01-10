@@ -13,13 +13,19 @@ export class Order {
     type: [
       {
         productId: { type: String, required: true },
+        productName: { type: String, required: false },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true },
       },
     ],
     required: true,
   })
-  items: { productId: string; quantity: number; price: number }[];
+  items: {
+    productId: string;
+    quantity: number;
+    price: number;
+    productName?: string;
+  }[];
 
   @Prop({ required: true })
   subtotal: number; // in kobo
@@ -90,6 +96,8 @@ export class Order {
     initiatedAt?: Date;
     raw?: any;
   };
+
+  createdAt?: Date;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);
