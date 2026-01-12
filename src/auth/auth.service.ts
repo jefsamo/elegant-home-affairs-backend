@@ -197,26 +197,34 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    let payload: any;
-    try {
-      payload = this.jwt.verify(dto.token, {
-        secret: this.config.get<string>('JWT_PASSWORD_RESET_SECRET'),
-      });
-    } catch {
+    const email = dto.email.toLowerCase().trim();
+
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new BadRequestException('Invalid or expired token');
+
+    if (
+      !user.resetPasswordExpiresAt ||
+      user.resetPasswordExpiresAt < new Date()
+    ) {
       throw new BadRequestException('Invalid or expired token');
     }
 
-    // if (payload.type !== 'password-reset') {
-    //   throw new BadRequestException('Invalid token type');
-    // }
-
-    const user = await this.usersService.findUserById(payload.sub);
-    if (!user) throw new BadRequestException('User not found');
+    const isMatch = await this.comparePassword(
+      dto.token,
+      user.resetPasswordTokenHash!,
+    );
+    if (!isMatch) {
+      throw new BadRequestException('Invalid or expired token');
+    }
 
     const passwordHash = await this.hashPassword(dto.newPassword);
-    await this.usersService.setPassword(user._id.toString(), passwordHash);
+    user.passwordHash = passwordHash;
 
-    // invalidate all existing refresh tokens
+    user.resetPasswordTokenHash = undefined;
+    user.resetPasswordExpiresAt = undefined;
+
+    await user.save();
+
     await this.usersService.incrementTokenVersion(user._id.toString());
 
     return { message: 'Password reset successfully', status: 'success' };
