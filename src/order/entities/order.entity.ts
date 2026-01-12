@@ -1,6 +1,7 @@
 // src/orders/schemas/order.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { Delivery, DeliverySchema } from './delivery.schema';
 
 export type OrderDocument = HydratedDocument<Order>;
 
@@ -55,8 +56,8 @@ export class Order {
   @Prop({ default: 'processing' })
   orderStatus: string;
 
-  @Prop({ type: Object, required: true })
-  delivery: any;
+  @Prop({ type: DeliverySchema, required: true })
+  delivery: Delivery;
 
   @Prop({ type: Types.ObjectId, ref: 'Discount', default: null })
   discountId?: string;

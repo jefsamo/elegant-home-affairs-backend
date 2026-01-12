@@ -12,6 +12,7 @@ import { Discount } from './schemas/discount.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { UpdateDiscountDto } from './dto/update-discount.dto';
+import { MongoServerError } from 'mongodb';
 
 @Injectable()
 export class DiscountService {
@@ -56,14 +57,14 @@ export class DiscountService {
 
     return {
       code: discount.name,
-      discountId: (discount as any)._id.toString(),
+      discountId: discount._id.toString(),
       percentage: pct,
-      description: (discount as any).description ?? null,
+      description: discount.description ?? null,
     };
   }
 
   async update(id: string, dto: UpdateDiscountDto) {
-    const update: any = { ...dto };
+    const update: UpdateDiscountDto = { ...dto };
 
     if (update.name) update.name = update.name.trim().toUpperCase();
 
@@ -75,8 +76,8 @@ export class DiscountService {
 
       if (!updated) throw new NotFoundException('Discount not found');
       return updated;
-    } catch (e: any) {
-      if (e?.code === 11000) {
+    } catch (e) {
+      if (e instanceof MongoServerError && e.code === 11000) {
         throw new BadRequestException('Discount code already exists');
       }
       throw e;

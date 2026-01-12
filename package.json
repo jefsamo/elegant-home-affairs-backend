@@ -39,6 +39,7 @@
     "express": "^5.1.0",
     "form-data": "^4.0.5",
     "mailgun.js": "^12.6.0",
+    "mongodb": "^7.0.0",
     "multer": "^2.0.2",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
