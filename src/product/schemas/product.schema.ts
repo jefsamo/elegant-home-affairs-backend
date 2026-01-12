@@ -33,6 +33,8 @@ export class Product {
 
   @Prop({ default: false })
   isTrending: boolean;
+  @Prop({ default: false })
+  isSoldOut?: boolean;
 
   @Prop({ required: true })
   price: number;
