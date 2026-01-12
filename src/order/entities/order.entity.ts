@@ -28,13 +28,13 @@ export class Order {
   }[];
 
   @Prop({ required: true })
-  subtotal: number; // in kobo
+  subtotal: number; // in naira
 
   @Prop({ required: true })
-  shipping: number; // in kobo
+  shipping: number; // in naira
 
   @Prop({ required: true })
-  total: number; // in kobo
+  total: number; // in naira
   @Prop({ required: true })
   totalAfterDiscount: number;
   @Prop({ required: false })
@@ -63,14 +63,18 @@ export class Order {
 
   @Prop({ default: null, trim: true })
   discountCode?: string;
+
   @Prop({ default: 'ship' })
-  shippingMethod?: string;
+  shippingMethod?: 'ship' | 'pickup';
 
   @Prop({ default: 0 })
   discountPercentage?: number;
 
   @Prop({ default: 0 })
   discountAmount?: number;
+
+  @Prop({ default: 0 })
+  totalAndShipping?: number;
 
   @Prop({ type: Types.ObjectId, ref: 'User', default: null })
   createdBy?: string; // admin who placed it

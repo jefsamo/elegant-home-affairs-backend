@@ -13,7 +13,8 @@ export class Payment {
   reference?: string;
   status?: string;
   accessCode?: string;
+  shippingFee?: number; //in kobo
 
-  amount?: number;
+  amount?: number; //in kobo
   checkoutSnapshot?: any;
 }

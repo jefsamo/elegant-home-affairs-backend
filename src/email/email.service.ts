@@ -57,7 +57,6 @@ export class EmailService {
       deliverySummary?: string;
     };
   }) {
-    console.log(args);
     const html = await render(
       OrderConfirmationEmail({
         firstName: args.firstName,
