@@ -46,6 +46,12 @@ class DeliveryDto {
   @IsOptional()
   @IsString()
   instructions?: string;
+
+  @IsOptional()
+  @IsNumber()
+  shippingFee?: number;
+
+  @IsString() shippingMethod: string;
 }
 
 export class InitializePaymentDto {
@@ -89,4 +95,8 @@ export class InitializePaymentDto {
   @IsOptional()
   @IsNumber()
   discountPercentage?: number;
+
+  @IsOptional()
+  @IsNumber()
+  shippingFee?: number;
 }

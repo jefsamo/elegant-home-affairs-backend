@@ -114,18 +114,19 @@ export class PaystackService {
     if (!reference || !access_code) {
       throw new BadRequestException('Paystack initialization failed');
     }
-
     // Save payment record + checkout snapshot for later Order creation
     await this.paymentModel.create({
       reference,
       accessCode: access_code,
+      shippingFee: dto.shippingFee,
       status: 'initialized',
-      // amount: dto.amount,
       createdAt: new Date().toISOString(),
       userId,
       checkoutSnapshot: {
         cart: dto.cart,
         delivery: dto.delivery,
+        shippingFee: dto.delivery.shippingFee,
+        shippingMethod: dto.delivery.shippingMethod,
         metadata: dto.metadata ?? {},
         discount: dto.discountCode
           ? {
@@ -251,6 +252,8 @@ export class PaystackService {
       reference,
       amount: payment.amount,
       cart: snapshot.cart,
+      shippingFee: snapshot?.shippingFee / 100,
+      shippingMethod: snapshot?.shippingMethod,
       delivery: snapshot.delivery,
       discount: snapshot.discount
         ? {
@@ -261,27 +264,27 @@ export class PaystackService {
         : null,
     });
 
-    const { firstName, email } = order.delivery;
+    // const { firstName, email } = order.delivery;
     // const { createdAt } = order;
-    await this.emailService.sendOrderConfirmationEmail({
-      to: email,
-      firstName: firstName,
-      order: {
-        id: String(order._id),
-        paymentReference: order.paymentReference,
-        createdAt: order.createdAt,
-        items: order.items.map((i) => ({
-          productId: i.productId,
-          quantity: i.quantity,
-          priceKobo: i.price,
-        })),
-        subtotalKobo: order.subtotal,
-        shippingKobo: order.shipping,
-        totalKobo: order.total,
-        discountKobo: order.discountAmount ?? 0,
-        deliverySummary: this.buildDeliverySummary(order.delivery),
-      },
-    });
+    // await this.emailService.sendOrderConfirmationEmail({
+    //   to: email,
+    //   firstName: firstName,
+    //   order: {
+    //     id: String(order._id),
+    //     paymentReference: order.paymentReference,
+    //     createdAt: order.createdAt,
+    //     items: order.items.map((i) => ({
+    //       productId: i.productId,
+    //       quantity: i.quantity,
+    //       priceKobo: i.price,
+    //     })),
+    //     subtotalKobo: order.subtotal,
+    //     shippingKobo: order.shipping,
+    //     totalKobo: order.total,
+    //     discountKobo: order.discountAmount ?? 0,
+    //     deliverySummary: this.buildDeliverySummary(order.delivery),
+    //   },
+    // });
     return { status: 'success', order };
   }
   // Webhook signature check (recommended)
