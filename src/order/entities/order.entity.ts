@@ -1,6 +1,7 @@
 // src/orders/schemas/order.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { Delivery, DeliverySchema } from './delivery.schema';
 
 export type OrderDocument = HydratedDocument<Order>;
 
@@ -13,22 +14,28 @@ export class Order {
     type: [
       {
         productId: { type: String, required: true },
+        productName: { type: String, required: false },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true },
       },
     ],
     required: true,
   })
-  items: { productId: string; quantity: number; price: number }[];
+  items: {
+    productId: string;
+    quantity: number;
+    price: number;
+    productName?: string;
+  }[];
 
   @Prop({ required: true })
-  subtotal: number; // in kobo
+  subtotal: number; // in naira
 
   @Prop({ required: true })
-  shipping: number; // in kobo
+  shipping: number; // in naira
 
   @Prop({ required: true })
-  total: number; // in kobo
+  total: number; // in naira
   @Prop({ required: true })
   totalAfterDiscount: number;
   @Prop({ required: false })
@@ -49,22 +56,26 @@ export class Order {
   @Prop({ default: 'processing' })
   orderStatus: string;
 
-  @Prop({ type: Object, required: true })
-  delivery: any;
+  @Prop({ type: DeliverySchema, required: true })
+  delivery: Delivery;
 
   @Prop({ type: Types.ObjectId, ref: 'Discount', default: null })
   discountId?: string;
 
   @Prop({ default: null, trim: true })
   discountCode?: string;
+
   @Prop({ default: 'ship' })
-  shippingMethod?: string;
+  shippingMethod?: 'ship' | 'pickup';
 
   @Prop({ default: 0 })
   discountPercentage?: number;
 
   @Prop({ default: 0 })
   discountAmount?: number;
+
+  @Prop({ default: 0 })
+  totalAndShipping?: number;
 
   @Prop({ type: Types.ObjectId, ref: 'User', default: null })
   createdBy?: string; // admin who placed it
@@ -90,6 +101,8 @@ export class Order {
     initiatedAt?: Date;
     raw?: any;
   };
+
+  createdAt?: Date;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

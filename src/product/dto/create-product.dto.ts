@@ -28,6 +28,9 @@ export class CreateProductDto {
   @IsOptional()
   isTrending?: boolean;
 
+  @IsOptional()
+  isSoldOut?: boolean;
+
   @IsString({ each: true })
   @IsOptional()
   colors?: string[];

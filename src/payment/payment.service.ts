@@ -19,6 +19,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { ListPaymentsQueryDto } from './dto/list-payments.query';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class PaystackService {
@@ -31,10 +32,44 @@ export class PaystackService {
     @InjectModel(Payment.name) private paymentModel: Model<Payment>,
     @Inject(forwardRef(() => OrdersService))
     private readonly ordersService: OrdersService,
+    private readonly emailService: EmailService,
   ) {
     if (!this.secretKey) {
       throw new Error('PAYSTACK_SECRET_KEY is not set');
     }
+  }
+
+  private buildDeliverySummary(delivery: any): string {
+    if (!delivery || typeof delivery !== 'object') {
+      return 'Delivery details not available.';
+    }
+
+    const lines: string[] = [];
+
+    const fullName = [delivery.firstName, delivery.lastName]
+      .filter(Boolean)
+      .join(' ');
+
+    if (fullName) lines.push(fullName);
+    if (delivery.phone) lines.push(`Phone: ${delivery.phone}`);
+
+    const address = [
+      delivery.address1,
+      delivery.address2,
+      delivery.city,
+      delivery.state,
+      delivery.country,
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+    if (address) lines.push(address);
+
+    if (delivery.instructions) {
+      lines.push(`Instructions: ${delivery.instructions}`);
+    }
+
+    return lines.join('\n');
   }
 
   private get headers() {
@@ -79,18 +114,19 @@ export class PaystackService {
     if (!reference || !access_code) {
       throw new BadRequestException('Paystack initialization failed');
     }
-
     // Save payment record + checkout snapshot for later Order creation
     await this.paymentModel.create({
       reference,
       accessCode: access_code,
+      shippingFee: dto.shippingFee,
       status: 'initialized',
-      // amount: dto.amount,
       createdAt: new Date().toISOString(),
       userId,
       checkoutSnapshot: {
         cart: dto.cart,
         delivery: dto.delivery,
+        shippingFee: dto.delivery.shippingFee,
+        shippingMethod: dto.delivery.shippingMethod,
         metadata: dto.metadata ?? {},
         discount: dto.discountCode
           ? {
@@ -216,6 +252,8 @@ export class PaystackService {
       reference,
       amount: payment.amount,
       cart: snapshot.cart,
+      shippingFee: snapshot?.shippingFee / 100,
+      shippingMethod: snapshot?.shippingMethod,
       delivery: snapshot.delivery,
       discount: snapshot.discount
         ? {
@@ -226,6 +264,27 @@ export class PaystackService {
         : null,
     });
 
+    // const { firstName, email } = order.delivery;
+    // const { createdAt } = order;
+    // await this.emailService.sendOrderConfirmationEmail({
+    //   to: email,
+    //   firstName: firstName,
+    //   order: {
+    //     id: String(order._id),
+    //     paymentReference: order.paymentReference,
+    //     createdAt: order.createdAt,
+    //     items: order.items.map((i) => ({
+    //       productId: i.productId,
+    //       quantity: i.quantity,
+    //       priceKobo: i.price,
+    //     })),
+    //     subtotalKobo: order.subtotal,
+    //     shippingKobo: order.shipping,
+    //     totalKobo: order.total,
+    //     discountKobo: order.discountAmount ?? 0,
+    //     deliverySummary: this.buildDeliverySummary(order.delivery),
+    //   },
+    // });
     return { status: 'success', order };
   }
   // Webhook signature check (recommended)

@@ -123,17 +123,18 @@ export class OrdersService {
     const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
     const shipping = shippingMethod === 'pickup' ? 0 : shippingFee;
-    console.log('shipping', shipping);
 
     const discountPct = discount?.percentage ?? 0;
     const discountAmount = Math.round((subtotal * discountPct) / 100);
 
     // if your intent is "subtotal + shipping - discount"
-    const total = Math.max(subtotal + shipping - discountAmount, 0);
-    console.log('total', total);
+    // const total = Math.max(subtotal + shipping - discountAmount, 0);
+    const total = Math.max(subtotal + shipping, 0);
+    const totalAndShipping = Math.max(subtotal + shipping, 0);
 
     const totalAfterDiscount = total - discountAmount;
-    const totalAndDiscountPlusShipping = total + shipping + discountAmount;
+    const totalAndDiscountPlusShipping = subtotal + shipping - discountAmount;
+    const totalAndDiscountPlusShippingKobo = (total - discountAmount) * 100;
 
     const payload = {
       userId,
@@ -151,9 +152,11 @@ export class OrdersService {
       paymentStatus: 'paid' as const,
       delivery,
       deliveryMode: shippingMethod,
+      shippingMethod,
+      totalAndShipping,
     };
 
-    if (total !== amount) {
+    if (totalAndDiscountPlusShippingKobo !== amount) {
       return this.orderModel.create({
         ...payload,
         orderStatus: 'needs_review',

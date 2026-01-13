@@ -6,10 +6,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Payment } from './entities/payment.entity';
 import { PaymentSchema } from './dto/payment.schema';
 import { OrderModule } from 'src/order/order.module';
+import { EmailModule } from 'src/email/email.module';
 
 @Module({
   imports: [
     HttpModule,
+    EmailModule,
     forwardRef(() => OrderModule),
     MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]),
   ],
