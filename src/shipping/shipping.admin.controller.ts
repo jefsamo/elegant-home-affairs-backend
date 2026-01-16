@@ -48,6 +48,7 @@ export class ShippingAdminController {
   }
 
   @Get('lagos-options')
+  @Roles('admin', 'customer')
   listLagos(
     @Query('isActive') isActive?: string,
     @Query('groupName') groupName?: string,
@@ -80,6 +81,7 @@ export class ShippingAdminController {
   }
 
   @Get('shipping-methods')
+  @Roles('admin', 'customer')
   listMethods(
     @Query('isActive') isActive?: string,
     @Query('applicability') applicability?: 'NON_LAGOS' | 'ALL',
