@@ -25,6 +25,11 @@ export class CreateProductDto {
   @Min(0)
   price: number;
 
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  weight?: number;
+
   @IsOptional()
   isTrending?: boolean;
 
