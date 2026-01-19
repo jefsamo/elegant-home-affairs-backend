@@ -15,6 +15,7 @@ export class Order {
       {
         productId: { type: String, required: true },
         productName: { type: String, required: false },
+        color: { type: String, required: false },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true },
       },
@@ -26,6 +27,7 @@ export class Order {
     quantity: number;
     price: number;
     productName?: string;
+    color?: string;
   }[];
 
   @Prop({ required: true })

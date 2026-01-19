@@ -24,6 +24,7 @@ export function OrderConfirmationEmail(props: {
     createdAt?: Date;
     items: {
       productName?: string;
+      color?: string;
       productId: string;
       quantity: number;
       priceKobo: number;

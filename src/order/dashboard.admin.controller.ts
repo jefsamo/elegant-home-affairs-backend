@@ -14,4 +14,9 @@ export class DashboardController {
   overview() {
     return this.dashboardService.getOverview();
   }
+  @Get('overviews')
+  @Roles('admin')
+  overviewV2() {
+    return this.dashboardService.getOverview();
+  }
 }
