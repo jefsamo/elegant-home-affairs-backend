@@ -46,6 +46,7 @@ export class EmailService {
       createdAt: Date | undefined;
       items: {
         productName?: string;
+        color?: string;
         productId: string;
         quantity: number;
         priceKobo: number;
