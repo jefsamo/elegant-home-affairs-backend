@@ -130,6 +130,7 @@ export class AuthController {
     const { accessToken, user } = await this.authService.loginWithGoogle(
       req.user as any,
     );
+    // console.log(user);
 
     // Option A (simple): redirect with token in query
     // (OK for dev; for prod prefer httpOnly cookie or a one-time code)
