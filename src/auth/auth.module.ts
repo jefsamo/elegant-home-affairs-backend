@@ -15,10 +15,18 @@ import { User, UserSchema } from 'src/users/schemas/user.schema';
 import { PassportModule } from '@nestjs/passport';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { EmailModule } from 'src/email/email.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    JwtModule.register({}), // config handled in service
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_ACCESS_SECRET'),
+        signOptions: { expiresIn: '7d' },
+      }),
+    }),
     UsersModule,
     MailModule,
     EmailModule,
