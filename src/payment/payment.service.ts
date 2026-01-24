@@ -264,27 +264,27 @@ export class PaystackService {
         : null,
     });
 
-    // const { firstName, email } = order.delivery;
+    const { firstName, email } = order.delivery;
     // const { createdAt } = order;
-    // await this.emailService.sendOrderConfirmationEmail({
-    //   to: email,
-    //   firstName: firstName,
-    //   order: {
-    //     id: String(order._id),
-    //     paymentReference: order.paymentReference,
-    //     createdAt: order.createdAt,
-    //     items: order.items.map((i) => ({
-    //       productId: i.productId,
-    //       quantity: i.quantity,
-    //       priceKobo: i.price,
-    //     })),
-    //     subtotalKobo: order.subtotal,
-    //     shippingKobo: order.shipping,
-    //     totalKobo: order.total,
-    //     discountKobo: order.discountAmount ?? 0,
-    //     deliverySummary: this.buildDeliverySummary(order.delivery),
-    //   },
-    // });
+    await this.emailService.sendOrderConfirmationEmail({
+      to: email,
+      firstName: firstName,
+      order: {
+        id: String(order._id),
+        paymentReference: order.paymentReference,
+        createdAt: order.createdAt,
+        items: order.items.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          priceKobo: i.price,
+        })),
+        subtotalKobo: order.subtotal,
+        shippingKobo: order.shipping,
+        totalKobo: order.total,
+        discountKobo: order.discountAmount ?? 0,
+        deliverySummary: this.buildDeliverySummary(order.delivery),
+      },
+    });
     return { status: 'success', order };
   }
   // Webhook signature check (recommended)
