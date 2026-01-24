@@ -14,6 +14,8 @@ async function bootstrap() {
       'http://localhost:5173', // local dev (no trailing slash)
       'http://172.16.50.30:5173', // local dev (no trailing slash)
       'https://elegant-home-affairs-frontend.vercel.app',
+      'https://www.eleganthomeaffairs.com',
+      'https://eleganthomeaffairs.com',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
