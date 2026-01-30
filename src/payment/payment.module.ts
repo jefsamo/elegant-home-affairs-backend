@@ -7,13 +7,16 @@ import { Payment } from './entities/payment.entity';
 import { PaymentSchema } from './dto/payment.schema';
 import { OrderModule } from 'src/order/order.module';
 import { EmailModule } from 'src/email/email.module';
+import { AuthModule } from 'src/auth/auth.module';
 
+//new implementation
 @Module({
   imports: [
     HttpModule,
     EmailModule,
     forwardRef(() => OrderModule),
     MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]),
+    AuthModule,
   ],
   controllers: [PaymentController],
   providers: [PaystackService],

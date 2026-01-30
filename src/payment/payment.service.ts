@@ -21,6 +21,7 @@ import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { ListPaymentsQueryDto } from './dto/list-payments.query';
 import { EmailService } from 'src/email/email.service';
 
+//new implementation
 @Injectable()
 export class PaystackService {
   private readonly baseUrl =
@@ -287,6 +288,116 @@ export class PaystackService {
     });
     return { status: 'success', order };
   }
+
+  async verifyPaystackAndCreateOrderV2(params: {
+    reference: string;
+    userId?: string;
+    guestId?: string;
+  }) {
+    const { reference, userId, guestId } = params;
+
+    if (!userId && !guestId) {
+      throw new BadRequestException('Missing user/guest identity');
+    }
+
+    // Find payment record belonging to this principal
+    const payment = await this.paymentModel.findOne({
+      reference,
+      ...(userId ? { userId } : { guestId }),
+    });
+
+    if (!payment) throw new BadRequestException('Payment record not found');
+
+    // If already successful, avoid duplicate orders
+    if (payment.status === 'success') {
+      return { status: 'already_verified', reference };
+    }
+
+    // Verify on Paystack
+    const url = `${this.baseUrl}/transaction/verify/${reference}`;
+    const resp = await firstValueFrom(
+      this.http.get(url, { headers: this.headers }),
+    );
+
+    const data = resp.data?.data;
+    if (!data)
+      throw new BadRequestException('Invalid Paystack verify response');
+
+    const paystackStatus = data.status;
+    const paidAmount = data.amount; // kobo
+
+    if (paystackStatus !== 'success') {
+      await this.paymentModel.updateOne(
+        { _id: (payment as any)._id },
+        { status: paystackStatus },
+      );
+      throw new BadRequestException(
+        `Payment not successful: ${paystackStatus}`,
+      );
+    }
+
+    if (paidAmount !== payment.amount) {
+      await this.paymentModel.updateOne(
+        { _id: (payment as any)._id },
+        { status: 'amount_mismatch' },
+      );
+      throw new BadRequestException('Payment amount mismatch');
+    }
+
+    await this.paymentModel.updateOne(
+      { _id: (payment as any)._id },
+      { status: 'success' },
+    );
+
+    const snapshot = (payment as any).checkoutSnapshot;
+    if (!snapshot?.cart || !snapshot?.delivery) {
+      throw new BadRequestException('Missing checkout snapshot on payment');
+    }
+
+    const order = await this.ordersService.createFromPayment({
+      reference,
+      amount: payment.amount,
+      cart: snapshot.cart,
+      shippingFee: snapshot?.shippingFee / 100,
+      shippingMethod: snapshot?.shippingMethod,
+      delivery: snapshot.delivery,
+      discount: snapshot.discount
+        ? {
+            discountId: snapshot.discount.discountId,
+            code: snapshot.discount.discountCode,
+            percentage: snapshot.discount.discountPercentage,
+          }
+        : null,
+
+      // identity
+      userId: userId! ?? null,
+      guestId: guestId ?? null,
+    });
+
+    const { firstName, email } = order.delivery;
+    await this.emailService.sendOrderConfirmationEmail({
+      to: email,
+      firstName,
+      order: {
+        id: String(order._id),
+        paymentReference: order.paymentReference,
+        createdAt: order.createdAt,
+        items: order.items.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          priceKobo: i.price,
+        })),
+        subtotalKobo: order.subtotal,
+        shippingKobo: order.shipping,
+        totalKobo: order.total,
+        discountKobo: order.discountAmount ?? 0,
+        deliverySummary: this.buildDeliverySummary(order.delivery),
+      },
+    });
+
+    return { status: 'success', order };
+  }
+
   // Webhook signature check (recommended)
   verifyWebhookSignature(rawBody: Buffer, signature?: string) {
     const crypto = require('crypto');

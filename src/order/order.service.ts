@@ -28,6 +28,7 @@ import { AdminCreateOrderDto } from './dto/admin-create-order.dto';
 import { AdminInitPaystackDto } from './dto/admin-init-paystack.dto';
 import { InitializePaymentDto } from 'src/payment/dto/initialize-payment.dto';
 
+//new implementation
 export type PaginatedOrders = {
   items: Order[];
   totalItems: number;
@@ -111,7 +112,8 @@ export class OrdersService {
     shippingFee = 0,
     shippingMethod = 'ship',
   }: {
-    userId: string;
+    userId?: string | null;
+    guestId?: string | null;
     reference: string;
     amount: number;
     cart: { productId: string; quantity: number; price: number }[];

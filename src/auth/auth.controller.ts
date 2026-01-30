@@ -30,6 +30,9 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { AuthGuard } from '@nestjs/passport';
+import { type Request } from 'express';
+
+//new implementation
 
 @Controller('auth')
 export class AuthController {
@@ -140,5 +143,16 @@ export class AuthController {
     // Option B (better): set httpOnly cookie then redirect
     // res.cookie('access_token', accessToken, { httpOnly: true, sameSite: 'lax', secure: false });
     // return res.redirect(`${frontend}/oauth-success`);
+  }
+
+  @Post('guest')
+  continueAsGuest(@Req() req: Request) {
+    const userAgent = req.headers['user-agent'] as string | undefined;
+
+    // if you're behind a proxy (Vercel, Nginx, etc.) ensure trust proxy is enabled,
+    // otherwise req.ip may not be the real client ip.
+    const ip = req.ip;
+
+    return this.authService.createGuestSession({ ip, userAgent });
   }
 }
