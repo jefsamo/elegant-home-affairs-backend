@@ -38,7 +38,7 @@ export class OrderController {
   ) {
     const isAdmin = user.roles?.includes('admin');
 
-    return this.orderService.findPaginated({
+    return this.orderService.findPaginatedV2({
       query,
       userId: isAdmin ? undefined : user.userId,
     });

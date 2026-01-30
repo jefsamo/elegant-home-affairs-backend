@@ -13,7 +13,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { Connection, FilterQuery, Model } from 'mongoose';
+import { Connection, FilterQuery, Model, Types } from 'mongoose';
 import { Order } from './entities/order.entity';
 import { Product } from 'src/product/schemas/product.schema';
 
@@ -123,17 +123,18 @@ export class OrdersService {
     const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
     const shipping = shippingMethod === 'pickup' ? 0 : shippingFee;
-    console.log('shipping', shipping);
 
     const discountPct = discount?.percentage ?? 0;
     const discountAmount = Math.round((subtotal * discountPct) / 100);
 
     // if your intent is "subtotal + shipping - discount"
-    const total = Math.max(subtotal + shipping - discountAmount, 0);
-    console.log('total', total);
+    // const total = Math.max(subtotal + shipping - discountAmount, 0);
+    const total = Math.max(subtotal + shipping, 0);
+    const totalAndShipping = Math.max(subtotal + shipping, 0);
 
     const totalAfterDiscount = total - discountAmount;
-    const totalAndDiscountPlusShipping = total + shipping + discountAmount;
+    const totalAndDiscountPlusShipping = subtotal + shipping - discountAmount;
+    const totalAndDiscountPlusShippingKobo = (total - discountAmount) * 100;
 
     const payload = {
       userId,
@@ -151,9 +152,11 @@ export class OrdersService {
       paymentStatus: 'paid' as const,
       delivery,
       deliveryMode: shippingMethod,
+      shippingMethod,
+      totalAndShipping,
     };
 
-    if (total !== amount) {
+    if (totalAndDiscountPlusShippingKobo !== amount) {
       return this.orderModel.create({
         ...payload,
         orderStatus: 'needs_review',
@@ -190,6 +193,68 @@ export class OrdersService {
         { 'delivery.phone': { $regex: s, $options: 'i' } },
         { _id: { $regex: s, $options: 'i' } as any },
       ];
+    }
+
+    const sortBy = query.sortBy?.trim() || 'createdAt';
+    const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
+    const sortOption = { [sortBy]: sortOrder } as any;
+
+    const [items, totalItems] = await Promise.all([
+      this.orderModel
+        .find(filter)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.orderModel.countDocuments(filter).exec(),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit) || 1;
+
+    return {
+      items,
+      totalItems,
+      totalPages,
+      currentPage: page,
+      limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
+  async findPaginatedV2(args: {
+    query: OrderQueryDto;
+    userId?: string;
+  }): Promise<PaginatedOrders> {
+    const { query, userId } = args;
+
+    const page = Math.max(1, Number(query.page ?? 1));
+    const limit = Math.max(1, Number(query.limit ?? 10));
+    const skip = (page - 1) * limit;
+
+    const filter: FilterQuery<Order> = {};
+
+    if (userId) filter.userId = userId as any;
+
+    if (query.status) filter.orderStatus = query.status;
+
+    // ✅ SEARCH
+    if (query.search?.trim()) {
+      const s = query.search.trim();
+
+      const or: FilterQuery<Order>[] = [
+        // These must be STRING fields in your schema for regex to work
+        { paymentReference: { $regex: s, $options: 'i' } as any },
+        { 'delivery.email': { $regex: s, $options: 'i' } as any },
+        { 'delivery.phone': { $regex: s, $options: 'i' } as any },
+      ];
+
+      // ✅ ObjectId-safe search (no regex on _id)
+      if (Types.ObjectId.isValid(s)) {
+        or.push({ _id: new Types.ObjectId(s) } as any);
+      }
+
+      filter.$or = or as any;
     }
 
     const sortBy = query.sortBy?.trim() || 'createdAt';

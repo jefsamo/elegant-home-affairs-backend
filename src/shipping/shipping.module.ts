@@ -16,13 +16,17 @@ import { ShippingAdminService } from './shipping.admin.service';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: State.name, schema: StateSchema }]),
     MongooseModule.forFeature([
+      { name: State.name, schema: StateSchema },
       { name: ShippingMethod.name, schema: ShippingMethodSchema },
-    ]),
-    MongooseModule.forFeature([
       { name: LagosShippingOption.name, schema: LagosShippingOptionSchema },
     ]),
+    // MongooseModule.forFeature([
+    //   { name: ShippingMethod.name, schema: ShippingMethodSchema },
+    // ]),
+    // MongooseModule.forFeature([
+    //   { name: LagosShippingOption.name, schema: LagosShippingOptionSchema },
+    // ]),
   ],
   controllers: [ShippingController, ShippingAdminController],
   providers: [ShippingService, ShippingAdminService],

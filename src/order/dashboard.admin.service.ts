@@ -178,4 +178,153 @@ export class DashboardService {
       daily: series,
     };
   }
+
+  async getOverviewV2() {
+    const now = new Date();
+
+    // ✅ Daily window: today only
+    const startToday = startOfDay(now);
+    const startTomorrow = startOfDay(addDays(now, 1));
+
+    // ✅ Previous day window: yesterday only (for % change)
+    const startYesterday = startOfDay(addDays(now, -1));
+    const startToday2 = startToday;
+
+    // 1) Hourly series for today (recommended for "daily stats" dashboards)
+    //    If you truly want a single number only, you can skip this.
+    const hourlyAgg = await this.orderModel.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startToday, $lt: startTomorrow },
+        },
+      },
+      {
+        $group: {
+          _id: { h: { $hour: '$createdAt' } },
+          orders: { $sum: 1 },
+          revenue: {
+            $sum: {
+              $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0],
+            },
+          },
+        },
+      },
+      { $sort: { '_id.h': 1 } },
+    ]);
+
+    const hourIndex = new Map<number, { revenue: number; orders: number }>();
+    for (const row of hourlyAgg) {
+      hourIndex.set(row._id.h, {
+        revenue: row.revenue ?? 0,
+        orders: row.orders ?? 0,
+      });
+    }
+
+    const series: any[] = [];
+    for (let h = 0; h < 24; h++) {
+      const v = hourIndex.get(h) ?? { revenue: 0, orders: 0 };
+      series.push({
+        hour: `${String(h).padStart(2, '0')}:00`,
+        revenue: v.revenue,
+        orders: v.orders,
+      });
+    }
+
+    // 2) Totals for TODAY
+    const totalsTodayAgg = await this.orderModel.aggregate([
+      { $match: { createdAt: { $gte: startToday, $lt: startTomorrow } } },
+      {
+        $group: {
+          _id: null,
+          totalOrdersToday: { $sum: 1 },
+          totalRevenueToday: {
+            $sum: {
+              $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0],
+            },
+          },
+        },
+      },
+    ]);
+
+    const totalOrdersToday = totalsTodayAgg[0]?.totalOrdersToday ?? 0;
+    const totalRevenueToday = totalsTodayAgg[0]?.totalRevenueToday ?? 0;
+
+    // 3) Totals for YESTERDAY (for daily % change)
+    const totalsYesterdayAgg = await this.orderModel.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startYesterday, $lt: startToday2 },
+          paymentStatus: 'paid',
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenueYesterday: { $sum: '$total' },
+        },
+      },
+    ]);
+
+    const totalRevenueYesterday =
+      totalsYesterdayAgg[0]?.totalRevenueYesterday ?? 0;
+
+    const revenueChangePctToday =
+      totalRevenueYesterday === 0
+        ? totalRevenueToday > 0
+          ? 100
+          : 0
+        : ((totalRevenueToday - totalRevenueYesterday) /
+            totalRevenueYesterday) *
+          100;
+
+    // 4) Pending orders (choose scope)
+    // If you mean "pending right now" (all-time pending), keep as-is.
+    // If you mean "pending created today", add createdAt filter.
+    const pendingOrders = await this.orderModel.countDocuments({
+      orderStatus: 'processing',
+      createdAt: { $gte: startToday, $lt: startTomorrow },
+    });
+
+    // 5) Active customers TODAY (not 30d)
+    const activeCustomersAgg = await this.orderModel.aggregate([
+      { $match: { createdAt: { $gte: startToday, $lt: startTomorrow } } },
+      { $group: { _id: '$userId' } },
+      { $count: 'count' },
+    ]);
+    const activeCustomersToday = activeCustomersAgg[0]?.count ?? 0;
+
+    // 6) Refunds TODAY (not 30d)
+    const refundsAgg = await this.orderModel.aggregate([
+      {
+        $match: {
+          refundedAt: { $gte: startToday, $lt: startTomorrow },
+          refundStatus: { $in: ['in_review', 'approved', 'rejected', 'paid'] },
+        },
+      },
+      {
+        $group: {
+          _id: '$refundStatus',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const refundsToday = refundsAgg.reduce((acc, r) => acc + (r.count ?? 0), 0);
+    const refundsInReviewToday =
+      refundsAgg.find((r) => r._id === 'in_review')?.count ?? 0;
+
+    return {
+      summary: {
+        totalRevenueToday,
+        revenueChangePctToday: Math.round(revenueChangePctToday),
+        totalOrdersToday,
+        pendingOrders,
+        activeCustomersToday,
+        refundsToday,
+        refundsInReviewToday,
+      },
+      // hourly breakdown for today (resets daily)
+      hourly: series,
+    };
+  }
 }

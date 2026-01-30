@@ -25,10 +25,12 @@ export class User {
   lastName: string;
 
   @Prop({
-    required: true,
+    required: false,
     unique: true,
+    sparse: true, // allows multiple docs where phoneNumber is missing
+    trim: true,
   })
-  phoneNumber: string;
+  phoneNumber?: string;
 
   @Prop()
   avatarUrl?: string;
