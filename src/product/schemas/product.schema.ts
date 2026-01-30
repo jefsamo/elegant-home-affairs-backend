@@ -33,7 +33,7 @@ export class Product {
 
   @Prop({ default: false })
   isTrending: boolean;
-
+  //
   @Prop({ default: false })
   isAvailable: boolean;
 
