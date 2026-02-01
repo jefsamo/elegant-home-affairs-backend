@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
@@ -77,9 +78,9 @@ export class PaymentController {
   }
 
   @Get('verify/:reference')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles('customer', 'admin')
-  @UseGuards(EitherAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer', 'admin')
+  // @UseGuards(EitherAuthGuard)
   verify(@Param('reference') reference: string, @CurrentUser() user: any) {
     return this.paystack.verifyPaystackAndCreateOrder(user?.userId, reference);
   }

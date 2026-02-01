@@ -6,23 +6,23 @@ import { ResolveShippingCostDto } from './dto/resolve-cost.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { EitherAuthGuard } from 'src/common/guards/either-auth.guard';
+// import { EitherAuthGuard } from 'src/common/guards/either-auth.guard';
 
 @Controller('shipping')
 export class ShippingController {
   constructor(private readonly shippingService: ShippingService) {}
 
   @Get('locations/states')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles('customer', 'admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer', 'admin')
   // @UseGuards(EitherAuthGuard)
   getStates() {
     return this.shippingService.getStates();
   }
 
   @Get('shipping/options')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles('customer', 'admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('customer', 'admin')
   // @UseGuards(EitherAuthGuard)
   getOptions(@Query() query: GetShippingOptionsDto) {
     return this.shippingService.getOptionsByState(query.stateCode);
