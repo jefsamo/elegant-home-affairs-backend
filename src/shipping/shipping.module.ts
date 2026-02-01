@@ -13,6 +13,7 @@ import {
 } from './schemas/shipping-method.schema';
 import { ShippingAdminController } from './shipping.admin.controller';
 import { ShippingAdminService } from './shipping.admin.service';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ShippingAdminService } from './shipping.admin.service';
       { name: ShippingMethod.name, schema: ShippingMethodSchema },
       { name: LagosShippingOption.name, schema: LagosShippingOptionSchema },
     ]),
+    AuthModule,
     // MongooseModule.forFeature([
     //   { name: ShippingMethod.name, schema: ShippingMethodSchema },
     // ]),

@@ -16,7 +16,11 @@ import { PassportModule } from '@nestjs/passport';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { EmailModule } from 'src/email/email.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { GuestSession, GuestSessionSchema } from './schemas/guest.schema';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { GuestJwtGuard } from 'src/common/guards/guest-auth.guard';
 
+//new implementation
 @Module({
   imports: [
     JwtModule.registerAsync({
@@ -33,6 +37,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     MongooseModule.forFeature([
       { name: RefreshToken.name, schema: RefreshTokenSchema },
       { name: User.name, schema: UserSchema },
+      { name: GuestSession.name, schema: GuestSessionSchema },
     ]),
     PassportModule,
   ],
@@ -41,7 +46,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     JwtAccessStrategy,
     JwtRefreshStrategy,
     GoogleStrategy,
+    JwtAuthGuard,
+    GuestJwtGuard,
   ],
+  exports: [JwtAuthGuard, GuestJwtGuard],
   controllers: [AuthController],
 })
 export class AuthModule {}

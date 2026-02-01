@@ -54,6 +54,17 @@ export class OrderController {
     return this.orderService.adminCreateOrder(dto, admin.userId);
   }
 
+  //new implementation
+  @Post('create-order/guest-order')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async guestCreateOrder(
+    @Body() dto: AdminCreateOrderDto,
+    @CurrentUser() admin: { userId: string },
+  ) {
+    return this.orderService.adminCreateOrder(dto, admin.userId);
+  }
+
   @Post('/create-paystack-link')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
