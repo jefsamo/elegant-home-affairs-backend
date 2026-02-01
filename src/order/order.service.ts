@@ -135,6 +135,7 @@ export class OrdersService {
 
     // if your intent is "subtotal + shipping - discount"
     const total = Math.max(subtotal + shipping - discountAmount, 0);
+    const totalAndShipping = Math.max(subtotal + shipping, 0);
 
     const totalAfterDiscount = total - discountAmount;
     const totalAndDiscountPlusShipping = subtotal + shipping - discountAmount;
