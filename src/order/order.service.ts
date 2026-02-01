@@ -248,7 +248,6 @@ export class OrdersService {
         { 'delivery.phone': re as any },
       ];
 
-      // Only add _id match if user typed a valid ObjectId
       if (Types.ObjectId.isValid(s)) {
         or.push({ _id: new Types.ObjectId(s) } as any);
       }
