@@ -25,6 +25,9 @@ export class Product {
   @Prop({ trim: true })
   description: string;
 
+  @Prop({ trim: true, default: 'Others', required: false })
+  categoryName?: string;
+
   @Prop({
     trim: true,
     default: 'https://www.instagram.com/home_affairs.ng?igsh=N2pyNjNrY2Jyd2Vr',

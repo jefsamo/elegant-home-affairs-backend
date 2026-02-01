@@ -6,7 +6,7 @@
 // src/products/products.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { Product } from './schemas/product.schema';
 import type { ProductDocument } from './schemas/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -15,6 +15,7 @@ import { CategoryService } from 'src/category/category.service';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
 import { paginate, paginateV2 } from 'src/common/utils/paginate.util';
+import { ProductQueryDto } from './dto/product-query.dto';
 
 @Injectable()
 export class ProductService {
@@ -30,6 +31,7 @@ export class ProductService {
 
     const product = new this.productModel({
       ...dto,
+      categoryName: category.name,
       createdBy: userId,
     });
 
@@ -37,9 +39,20 @@ export class ProductService {
   }
 
   async findAll(
-    pagination: PaginationQueryDto,
+    pagination: ProductQueryDto,
   ): Promise<PaginatedResult<Product>> {
-    const filter = {};
+    const filter: FilterQuery<ProductDocument> = {};
+
+    // category filter
+    if (pagination.category) {
+      filter.category = pagination.category;
+    }
+
+    if (pagination.search?.trim()) {
+      const q = pagination.search.trim();
+
+      filter.$or = [{ name: { $regex: q, $options: 'i' } }];
+    }
 
     return paginateV2<ProductDocument>(this.productModel, pagination, filter);
   }

@@ -31,7 +31,10 @@ export class ProductController {
 
   @Get()
   async findAll(@Query() query: PaginationQueryDto) {
-    return this.productsService.findAll(query);
+    // console.log();
+    // const products = await this.productsService.findAll(query);
+    // console.log(products.items);
+    return await this.productsService.findAll(query);
   }
   @Get(':id')
   async findOne(@Param('id') id: string) {
