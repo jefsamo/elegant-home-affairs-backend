@@ -111,7 +111,7 @@ export class UsersService {
     const [items, total] = await Promise.all([
       this.userModel
         .find(filter)
-        .select('-passwordHash') // ✅ never send password hash
+        .select('-passwordHash')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)

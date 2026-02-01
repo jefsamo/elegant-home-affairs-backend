@@ -135,7 +135,8 @@ export class OrdersService {
     const total = Math.max(subtotal + shipping - discountAmount, 0);
 
     const totalAfterDiscount = total - discountAmount;
-    const totalAndDiscountPlusShipping = total + shipping + discountAmount;
+    const totalAndDiscountPlusShipping = subtotal + shipping - discountAmount;
+    const totalAndDiscountPlusShippingKobo = (total - discountAmount) * 100;
 
     const payload = {
       userId,
@@ -153,9 +154,11 @@ export class OrdersService {
       paymentStatus: 'paid' as const,
       delivery,
       deliveryMode: shippingMethod,
+      shippingMethod,
+      totalAndShipping,
     };
 
-    if (total !== amount) {
+    if (totalAndDiscountPlusShippingKobo !== amount) {
       return this.orderModel.create({
         ...payload,
         orderStatus: 'needs_review',
@@ -248,6 +251,68 @@ export class OrdersService {
         { 'delivery.phone': re as any },
       ];
 
+      if (Types.ObjectId.isValid(s)) {
+        or.push({ _id: new Types.ObjectId(s) } as any);
+      }
+
+      filter.$or = or as any;
+    }
+
+    const sortBy = query.sortBy?.trim() || 'createdAt';
+    const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
+    const sortOption = { [sortBy]: sortOrder } as any;
+
+    const [items, totalItems] = await Promise.all([
+      this.orderModel
+        .find(filter)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.orderModel.countDocuments(filter).exec(),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit) || 1;
+
+    return {
+      items,
+      totalItems,
+      totalPages,
+      currentPage: page,
+      limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+  }
+
+  async findPaginatedV2(args: {
+    query: OrderQueryDto;
+    userId?: string;
+  }): Promise<PaginatedOrders> {
+    const { query, userId } = args;
+
+    const page = Math.max(1, Number(query.page ?? 1));
+    const limit = Math.max(1, Number(query.limit ?? 10));
+    const skip = (page - 1) * limit;
+
+    const filter: FilterQuery<Order> = {};
+
+    if (userId) filter.userId = userId as any;
+
+    if (query.status) filter.orderStatus = query.status;
+
+    // ✅ SEARCH
+    if (query.search?.trim()) {
+      const s = query.search.trim();
+
+      const or: FilterQuery<Order>[] = [
+        // These must be STRING fields in your schema for regex to work
+        { paymentReference: { $regex: s, $options: 'i' } as any },
+        { 'delivery.email': { $regex: s, $options: 'i' } as any },
+        { 'delivery.phone': { $regex: s, $options: 'i' } as any },
+      ];
+
+      // ✅ ObjectId-safe search (no regex on _id)
       if (Types.ObjectId.isValid(s)) {
         or.push({ _id: new Types.ObjectId(s) } as any);
       }

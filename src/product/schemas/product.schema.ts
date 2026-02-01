@@ -39,6 +39,8 @@ export class Product {
   //
   @Prop({ default: false })
   isAvailable: boolean;
+  @Prop({ default: false })
+  isSoldOut?: boolean;
 
   @Prop({ required: true })
   price: number;
@@ -67,7 +69,9 @@ export class Product {
   components?: ProductComponent[];
 
   @Prop({ type: Number, default: 0 })
-  bundlePrice?: number; // if > 0 use as price
+  bundlePrice?: number;
+  @Prop({ type: Number, default: 1 })
+  weight?: number;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

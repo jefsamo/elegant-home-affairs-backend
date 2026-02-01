@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
@@ -12,6 +13,9 @@ async function bootstrap() {
       // 'https://finnybank-fe.vercel.app', // production FE
       'http://localhost:5173', // local dev (no trailing slash)
       'http://172.16.50.30:5173', // local dev (no trailing slash)
+      'https://elegant-home-affairs-frontend.vercel.app',
+      'https://www.eleganthomeaffairs.com',
+      'https://eleganthomeaffairs.com',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',

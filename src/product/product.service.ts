@@ -26,8 +26,19 @@ export class ProductService {
   ) {}
 
   async create(dto: CreateProductDto, userId: string) {
-    const category = await this.categoriesService.findById(dto.categoryId);
-    if (!category) throw new NotFoundException('Category not found');
+    const OTHER_CATEGORY_ID =
+      process.env.NODE_ENV === 'production'
+        ? '6968deef904ef2688054bc56' // prod
+        : '6968e0067143cd103af13871'; // dev
+
+    const categoryId = dto.categoryId?.trim()
+      ? dto.categoryId
+      : OTHER_CATEGORY_ID;
+
+    const category = await this.categoriesService.findById(categoryId);
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
 
     const product = new this.productModel({
       ...dto,
@@ -37,6 +48,22 @@ export class ProductService {
 
     return product.save();
   }
+
+  // async create(dto: CreateProductDto, userId: string) {
+  //   const otherCategoryIdProd = '6968deef904ef2688054bc56';
+  //   const otherCategoryIdDev = '6968e0067143cd103af13871';
+  //   const category = await this.categoriesService.findById(
+  //     dto.categoryId ?? otherCategoryIdDev,
+  //   );
+  //   if (!category) throw new NotFoundException('Category not found');
+
+  //   const product = new this.productModel({
+  //     ...dto,
+  //     createdBy: userId,
+  //   });
+
+  //   return product.save();
+  // }
 
   async findAll(
     pagination: ProductQueryDto,
