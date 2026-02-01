@@ -38,6 +38,10 @@ export type PaginatedOrders = {
   hasPrevPage: boolean;
 };
 
+function escapeRegExp(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -128,9 +132,7 @@ export class OrdersService {
     const discountAmount = Math.round((subtotal * discountPct) / 100);
 
     // if your intent is "subtotal + shipping - discount"
-    // const total = Math.max(subtotal + shipping - discountAmount, 0);
-    const total = Math.max(subtotal + shipping, 0);
-    const totalAndShipping = Math.max(subtotal + shipping, 0);
+    const total = Math.max(subtotal + shipping - discountAmount, 0);
 
     const totalAfterDiscount = total - discountAmount;
     const totalAndDiscountPlusShipping = subtotal + shipping - discountAmount;
@@ -169,6 +171,59 @@ export class OrdersService {
     });
   }
 
+  // async findPaginated(args: {
+  //   query: OrderQueryDto;
+  //   userId?: string;
+  // }): Promise<PaginatedOrders> {
+  //   const { query, userId } = args;
+
+  //   const page = Number(query.page ?? 1);
+  //   const limit = Number(query.limit ?? 10);
+  //   const skip = (page - 1) * limit;
+
+  //   const filter: FilterQuery<Order> = {};
+
+  //   if (userId) filter.userId = userId as any;
+
+  //   if (query.status) filter.orderStatus = query.status;
+
+  //   if (query.search?.trim()) {
+  //     const s = query.search.trim();
+  //     filter.$or = [
+  //       { paymentReference: { $regex: s, $options: 'i' } },
+  //       { 'delivery.email': { $regex: s, $options: 'i' } },
+  //       { 'delivery.phone': { $regex: s, $options: 'i' } },
+  //       { _id: { $regex: s, $options: 'i' } as any },
+  //     ];
+  //   }
+
+  //   const sortBy = query.sortBy?.trim() || 'createdAt';
+  //   const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
+  //   const sortOption = { [sortBy]: sortOrder } as any;
+
+  //   const [items, totalItems] = await Promise.all([
+  //     this.orderModel
+  //       .find(filter)
+  //       .sort(sortOption)
+  //       .skip(skip)
+  //       .limit(limit)
+  //       .exec(),
+  //     this.orderModel.countDocuments(filter).exec(),
+  //   ]);
+
+  //   const totalPages = Math.ceil(totalItems / limit) || 1;
+
+  //   return {
+  //     items,
+  //     totalItems,
+  //     totalPages,
+  //     currentPage: page,
+  //     limit,
+  //     hasNextPage: page < totalPages,
+  //     hasPrevPage: page > 1,
+  //   };
+  // }
+
   async findPaginated(args: {
     query: OrderQueryDto;
     userId?: string;
@@ -182,17 +237,25 @@ export class OrdersService {
     const filter: FilterQuery<Order> = {};
 
     if (userId) filter.userId = userId as any;
-
     if (query.status) filter.orderStatus = query.status;
 
     if (query.search?.trim()) {
       const s = query.search.trim();
-      filter.$or = [
-        { paymentReference: { $regex: s, $options: 'i' } },
-        { 'delivery.email': { $regex: s, $options: 'i' } },
-        { 'delivery.phone': { $regex: s, $options: 'i' } },
-        { _id: { $regex: s, $options: 'i' } as any },
+      const re = new RegExp(escapeRegExp(s), 'i');
+
+      const or: FilterQuery<Order>[] = [
+        { paymentReference: re as any },
+        { 'delivery.email': re as any },
+        { 'delivery.firstName': re as any },
+        { 'delivery.lastName': re as any },
+        { 'delivery.phone': re as any },
       ];
+
+      if (Types.ObjectId.isValid(s)) {
+        or.push({ _id: new Types.ObjectId(s) } as any);
+      }
+
+      filter.$or = or as any;
     }
 
     const sortBy = query.sortBy?.trim() || 'createdAt';
