@@ -25,7 +25,8 @@ import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from 'src/users/schemas/user.schema';
 import { EmailService } from 'src/email/email.service';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
+import { GuestSession, GuestSessionDocument } from './schemas/guest.schema';
 
 @Injectable()
 export class AuthService {
@@ -37,6 +38,8 @@ export class AuthService {
     private emailService: EmailService,
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
+    @InjectModel(GuestSession.name)
+    private guestModel: Model<GuestSessionDocument>,
   ) {}
 
   private hashPassword(password: string): Promise<string> {
@@ -314,5 +317,50 @@ export class AuthService {
     const accessToken = await this.jwt.signAsync(payload);
 
     return { accessToken, user };
+  }
+
+  //new implementation
+  async createGuestSession(meta?: { ip?: string; userAgent?: string }) {
+    const guestId = randomUUID();
+
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    const session = await this.guestModel.create({
+      guestId,
+      expiresAt,
+      ip: meta?.ip,
+      userAgent: meta?.userAgent,
+    });
+    console.log(session);
+    const payload = {
+      typ: 'guest',
+      gid: session.guestId,
+      // sid: session._id.toString(),
+    };
+
+    const token = await this.jwt.signAsync(payload, {
+      expiresIn: '10m',
+    });
+
+    return {
+      guestToken: token,
+      guestId: session.guestId,
+      expiresAt: session.expiresAt,
+    };
+  }
+
+  async validateGuestTokenPayload(payload: any) {
+    if (!payload || payload.typ !== 'guest' || !payload.gid) {
+      throw new UnauthorizedException('Invalid guest token');
+    }
+
+    const session = await this.guestModel.findOne({ guestId: payload.gid });
+    if (!session) throw new UnauthorizedException('Guest session not found');
+
+    if (session.expiresAt.getTime() <= Date.now()) {
+      throw new UnauthorizedException('Guest session expired');
+    }
+
+    return session;
   }
 }

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -25,6 +27,9 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { ListPaymentsQueryDto } from './dto/list-payments.query';
+import { EitherAuthGuard } from 'src/common/guards/either-auth.guard';
+
+//new implementation
 
 @Controller('payment/paystack')
 export class PaymentController {
@@ -57,9 +62,10 @@ export class PaymentController {
       userId: isAdmin ? undefined : user.userId,
     });
   }
-
+  //new implementation
   @Post('initialize')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(EitherAuthGuard)
   @Roles('customer', 'admin')
   initialize(@Body() dto: InitializePaymentDto, @CurrentUser() user: any) {
     return this.paystack.initializePaystack(user?.userId, dto);
@@ -71,10 +77,26 @@ export class PaymentController {
   }
 
   @Get('verify/:reference')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('customer', 'admin')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles('customer', 'admin')
+  @UseGuards(EitherAuthGuard)
   verify(@Param('reference') reference: string, @CurrentUser() user: any) {
     return this.paystack.verifyPaystackAndCreateOrder(user?.userId, reference);
+  }
+
+  @Get('verify-with-guest/:reference')
+  @UseGuards(EitherAuthGuard)
+  verifyV2(@Param('reference') reference: string, @Req() req: any) {
+    // req.user for logged-in user
+    // req.guest for guest
+    const userId = req.user?.userId;
+    const guestId = req.guest?.guestId;
+
+    return this.paystack.verifyPaystackAndCreateOrderV2({
+      reference,
+      userId,
+      guestId,
+    });
   }
 
   @Get('page/:id')

@@ -104,7 +104,7 @@ export class EmailService {
     return this.resend.emails.send({
       from: this.from(),
       to: adminEmail,
-      subject: `Someone just place an order  — ${args.order.paymentReference}`,
+      subject: `Someone just placed an order  — ${args.order.paymentReference}`,
       html,
     });
   }
