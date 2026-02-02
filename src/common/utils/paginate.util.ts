@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // src/common/utils/paginate.util.ts
@@ -154,9 +155,9 @@ export async function paginateV2<T extends Document>(
   const skip = (page - 1) * limit;
 
   const sortOption: Record<string, 1 | -1> = {
-    isAvailable: -1, // true first
-    isTrending: -1, // true first
-    isSoldOut: 1, // false first, true last
+    isAvailable: -1,
+    isTrending: -1,
+    isSoldOut: 1,
   };
 
   const sortBy = (pagination as any).sortBy as string | undefined;
@@ -166,7 +167,6 @@ export async function paginateV2<T extends Document>(
     const sortOrder: 1 | -1 = sortOrderRaw === 'desc' ? -1 : 1;
     sortOption[sortBy] = sortOrder;
   }
-  console.log(filter);
   const [items, totalItems] = await Promise.all([
     model
       .find(filter, projection, options)

@@ -72,4 +72,40 @@ export class EmailService {
       html,
     });
   }
+  async sendOrderConfirmationEmailAdmin(args: {
+    firstName?: string;
+    order: {
+      id: string;
+      paymentReference: string;
+      createdAt: Date | undefined;
+      items: {
+        productName?: string;
+        color?: string;
+        productId: string;
+        quantity: number;
+        priceKobo: number;
+      }[];
+      subtotalKobo: number;
+      shippingKobo: number;
+      totalKobo: number;
+      discountKobo?: number;
+      deliverySummary?: string;
+    };
+  }) {
+    const html = await render(
+      OrderConfirmationEmail({
+        firstName: args.firstName,
+        order: args.order,
+      }),
+    );
+
+    const adminEmail = 'adegokep4@gmail.com';
+
+    return this.resend.emails.send({
+      from: this.from(),
+      to: adminEmail,
+      subject: `Someone just place an order  — ${args.order.paymentReference}`,
+      html,
+    });
+  }
 }

@@ -69,7 +69,7 @@ export class AuthService {
 
   async register(dto: RegisterDto) {
     const existing = await this.usersService.findUserByEmail(dto.email);
-    if (existing) throw new BadRequestException('Email already in use');
+    if (existing) throw new BadRequestException('Email already in use!');
 
     const passwordHash = await this.hashPassword(dto.password);
     const user = await this.usersService.createUser({

@@ -10,17 +10,17 @@ import {
 
 export class ChangePasswordDto {
   @IsString()
-  currentPassword!: string;
+  currentPassword: string;
 
   @IsString()
   @MinLength(8, {
     message: 'New password must be at least 8 characters',
   })
-  newPassword!: string;
+  newPassword: string;
 
   @IsString()
   @ValidateIf((o) => o.newPassword)
-  confirmNewPassword!: string;
+  confirmNewPassword: string;
 
   @IsOptional()
   @IsBoolean()

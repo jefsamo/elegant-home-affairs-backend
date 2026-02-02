@@ -155,7 +155,7 @@ export class OrdersService {
       delivery,
       deliveryMode: shippingMethod,
       shippingMethod,
-      totalAndShipping,
+      // totalAndShipping,
     };
 
     if (totalAndDiscountPlusShippingKobo !== amount) {

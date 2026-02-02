@@ -17,7 +17,6 @@ export class TimeSeriesQueryDto {
   @IsString()
   tz?: string; // default Europe/London
 
-  // order filters (optional)
   @IsOptional()
   @IsString()
   paymentStatus?: string;
