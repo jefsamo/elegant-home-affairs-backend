@@ -32,8 +32,8 @@ export class CloudinaryController {
   }
 
   @Post('images')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @UseInterceptors(FilesInterceptor('files', 10)) // up to 10 images
   async uploadImages(@UploadedFiles() files: Express.Multer.File[]) {
     const uploads = await Promise.all(
