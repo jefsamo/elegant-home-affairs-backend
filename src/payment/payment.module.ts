@@ -8,6 +8,7 @@ import { PaymentSchema } from './dto/payment.schema';
 import { OrderModule } from 'src/order/order.module';
 import { EmailModule } from 'src/email/email.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { Order, OrderSchema } from 'src/order/entities/order.entity';
 
 //new implementation
 @Module({
@@ -15,7 +16,10 @@ import { AuthModule } from 'src/auth/auth.module';
     HttpModule,
     EmailModule,
     forwardRef(() => OrderModule),
-    MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]),
+    MongooseModule.forFeature([
+      { name: Payment.name, schema: PaymentSchema },
+      { name: Order.name, schema: OrderSchema },
+    ]),
     AuthModule,
   ],
   controllers: [PaymentController],

@@ -20,6 +20,7 @@ import { FilterQuery, Model } from 'mongoose';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { ListPaymentsQueryDto } from './dto/list-payments.query';
 import { EmailService } from 'src/email/email.service';
+import { Order } from 'src/order/entities/order.entity';
 
 //new implementation
 @Injectable()
@@ -31,6 +32,7 @@ export class PaystackService {
   constructor(
     private readonly http: HttpService,
     @InjectModel(Payment.name) private paymentModel: Model<Payment>,
+    @InjectModel(Order.name) private orderModel: Model<Order>,
     @Inject(forwardRef(() => OrdersService))
     private readonly ordersService: OrdersService,
     private readonly emailService: EmailService,
@@ -265,46 +267,48 @@ export class PaystackService {
         : null,
     });
 
-    const { firstName, email } = order.delivery;
-    // const { createdAt } = order;
-    await this.emailService.sendOrderConfirmationEmail({
-      to: email,
-      firstName: firstName,
-      order: {
-        id: String(order._id),
-        paymentReference: order.paymentReference,
-        createdAt: order.createdAt,
-        items: order.items.map((i) => ({
-          productId: i.productId,
-          quantity: i.quantity,
-          priceKobo: i.price,
-        })),
-        subtotalKobo: order.subtotal,
-        shippingKobo: order.shipping,
-        totalKobo: order.total,
-        discountKobo: order.discountAmount ?? 0,
-        deliverySummary: this.buildDeliverySummary(order.delivery),
-      },
-    });
-    await this.emailService.sendOrderConfirmationEmailAdmin({
-      firstName: firstName,
-      order: {
-        id: String(order._id),
-        paymentReference: order.paymentReference,
-        createdAt: order.createdAt,
-        items: order.items.map((i) => ({
-          productId: i.productId,
-          quantity: i.quantity,
-          priceKobo: i.price,
-        })),
-        subtotalKobo: order.subtotal,
-        shippingKobo: order.shipping,
-        totalKobo: order.total,
-        discountKobo: order.discountAmount ?? 0,
-        deliverySummary: this.buildDeliverySummary(order.delivery),
-      },
-    });
-    return { status: 'success', order };
+    if (order) {
+      const { firstName, email } = order.delivery;
+      // const { createdAt } = order;
+      await this.emailService.sendOrderConfirmationEmail({
+        to: email,
+        firstName: firstName,
+        order: {
+          id: String(order._id),
+          paymentReference: order.paymentReference,
+          createdAt: order.createdAt,
+          items: order.items.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            priceKobo: i.price,
+          })),
+          subtotalKobo: order.subtotal,
+          shippingKobo: order.shipping,
+          totalKobo: order.total,
+          discountKobo: order.discountAmount ?? 0,
+          deliverySummary: this.buildDeliverySummary(order.delivery),
+        },
+      });
+      await this.emailService.sendOrderConfirmationEmailAdmin({
+        firstName: firstName,
+        order: {
+          id: String(order._id),
+          paymentReference: order.paymentReference,
+          createdAt: order.createdAt,
+          items: order.items.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            priceKobo: i.price,
+          })),
+          subtotalKobo: order.subtotal,
+          shippingKobo: order.shipping,
+          totalKobo: order.total,
+          discountKobo: order.discountAmount ?? 0,
+          deliverySummary: this.buildDeliverySummary(order.delivery),
+        },
+      });
+      return { status: 'success', order };
+    }
   }
 
   async verifyPaystackAndCreateOrderV2(params: {
@@ -392,47 +396,49 @@ export class PaystackService {
       guestId: guestId ?? null,
     });
 
-    const { firstName, email } = order.delivery;
-    await this.emailService.sendOrderConfirmationEmail({
-      to: email,
-      firstName,
-      order: {
-        id: String(order._id),
-        paymentReference: order.paymentReference,
-        createdAt: order.createdAt,
-        items: order.items.map((i) => ({
-          productId: i.productId,
-          quantity: i.quantity,
-          priceKobo: i.price,
-        })),
-        subtotalKobo: order.subtotal,
-        shippingKobo: order.shipping,
-        totalKobo: order.total,
-        discountKobo: order.discountAmount ?? 0,
-        deliverySummary: this.buildDeliverySummary(order.delivery),
-      },
-    });
+    if (order) {
+      const { firstName, email } = order.delivery;
+      await this.emailService.sendOrderConfirmationEmail({
+        to: email,
+        firstName,
+        order: {
+          id: String(order._id),
+          paymentReference: order.paymentReference,
+          createdAt: order.createdAt,
+          items: order.items.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            priceKobo: i.price,
+          })),
+          subtotalKobo: order.subtotal,
+          shippingKobo: order.shipping,
+          totalKobo: order.total,
+          discountKobo: order.discountAmount ?? 0,
+          deliverySummary: this.buildDeliverySummary(order.delivery),
+        },
+      });
 
-    await this.emailService.sendOrderConfirmationEmailAdmin({
-      firstName: firstName,
-      order: {
-        id: String(order._id),
-        paymentReference: order.paymentReference,
-        createdAt: order.createdAt,
-        items: order.items.map((i) => ({
-          productId: i.productId,
-          quantity: i.quantity,
-          priceKobo: i.price,
-        })),
-        subtotalKobo: order.subtotal,
-        shippingKobo: order.shipping,
-        totalKobo: order.total,
-        discountKobo: order.discountAmount ?? 0,
-        deliverySummary: this.buildDeliverySummary(order.delivery),
-      },
-    });
+      await this.emailService.sendOrderConfirmationEmailAdmin({
+        firstName: firstName,
+        order: {
+          id: String(order._id),
+          paymentReference: order.paymentReference,
+          createdAt: order.createdAt,
+          items: order.items.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            priceKobo: i.price,
+          })),
+          subtotalKobo: order.subtotal,
+          shippingKobo: order.shipping,
+          totalKobo: order.total,
+          discountKobo: order.discountAmount ?? 0,
+          deliverySummary: this.buildDeliverySummary(order.delivery),
+        },
+      });
 
-    return { status: 'success', order };
+      return { status: 'success', order };
+    }
   }
 
   // Webhook signature check (recommended)
@@ -449,6 +455,71 @@ export class PaystackService {
     if (hash !== signature)
       throw new UnauthorizedException('Invalid webhook signature');
     return true;
+  }
+
+  async handleWebhookEvent(payload: any) {
+    const event = payload?.event;
+    const data = payload?.data;
+
+    if (!event || !data) return;
+
+    if (event !== 'charge.success') return;
+
+    const reference = data.reference as string;
+    const paidAmountKobo = data.amount as number;
+    const status = data.status as string;
+
+    if (status !== 'success') return;
+
+    // 1) Find payment record
+    const payment = await this.paymentModel.findOne({ reference });
+    if (!payment) return; // log + investigate
+
+    // 2) Amount check
+    if (paidAmountKobo !== payment.amount) {
+      await this.paymentModel.updateOne(
+        { _id: payment._id },
+        { status: 'amount_mismatch' },
+      );
+      return;
+    }
+
+    // 3) Mark payment success
+    if (payment.status !== 'success') {
+      await this.paymentModel.updateOne(
+        { _id: payment._id },
+        { status: 'success' },
+      );
+    }
+
+    // 4) Idempotency: create order ONCE per reference
+    // strongly recommended: unique index on Order.paymentReference
+    const existing = await this.orderModel.findOne({
+      paymentReference: reference,
+    });
+    if (existing) return;
+
+    const snapshot = (payment as any).checkoutSnapshot;
+    if (!snapshot?.cart || !snapshot?.delivery) return;
+
+    // IMPORTANT: Make createFromPayment itself idempotent too (unique index + catch 11000)
+    await this.ordersService.createFromPayment({
+      reference,
+      amount: payment.amount,
+      cart: snapshot.cart,
+      delivery: snapshot.delivery,
+      shippingFee: (snapshot.shippingFee ?? 0) / 100,
+      shippingMethod: snapshot.shippingMethod,
+      discount: snapshot.discount
+        ? {
+            discountId: snapshot.discount.discountId,
+            code: snapshot.discount.discountCode,
+            percentage: snapshot.discount.discountPercentage,
+          }
+        : null,
+      userId: payment.userId ?? null,
+      // guestId: payment.guestId ?? null,
+    });
   }
 
   async refundTransaction(args: { transaction: string; amount?: number }) {
