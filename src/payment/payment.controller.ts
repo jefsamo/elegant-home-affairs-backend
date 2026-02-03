@@ -105,11 +105,13 @@ export class PaymentController {
   }
 
   @Post('webhook')
-  webhook(@Req() req: Request) {
+  async webhook(@Req() req: Request) {
     const signature = req.headers['x-paystack-signature'] as string;
     const rawBody = (req as any).rawBody as Buffer;
 
     this.paystack.verifyWebhookSignature(rawBody, signature);
+    await this.paystack.handleWebhookEvent(req.body);
+
     return { received: true };
   }
 }

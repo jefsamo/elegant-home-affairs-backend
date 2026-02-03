@@ -168,10 +168,22 @@ export class OrdersService {
       });
     }
 
-    return this.orderModel.create({
-      ...payload,
-      orderStatus: 'processing',
-    });
+    // return this.orderModel.create({
+    //   ...payload,
+    //   orderStatus: 'processing',
+    // });
+
+    try {
+      return await this.orderModel.create({
+        ...payload,
+        orderStatus: 'processing',
+      });
+    } catch (e: any) {
+      if (e?.code === 11000) {
+        return this.orderModel.findOne({ paymentReference: reference });
+      }
+      throw e;
+    }
   }
 
   async findPaginated(args: {
