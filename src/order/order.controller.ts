@@ -76,6 +76,13 @@ export class OrderController {
     return this.orderService.adminCreatePaystackLink(dto, admin.userId, dto2);
   }
 
+  @Post('from-payment/:reference')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  createFromPaymentReference(@Param('reference') reference: string) {
+    return this.orderService.createFromPaymentReference(reference);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'customer')

@@ -8,9 +8,7 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
   Req,
   UseGuards,
   Query,
@@ -28,6 +26,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { ListPaymentsQueryDto } from './dto/list-payments.query';
 import { EitherAuthGuard } from 'src/common/guards/either-auth.guard';
+import { Payment } from './entities/payment.entity';
 
 //new implementation
 
@@ -69,6 +68,14 @@ export class PaymentController {
   @Roles('customer', 'admin')
   initialize(@Body() dto: InitializePaymentDto, @CurrentUser() user: any) {
     return this.paystack.initializePaystack(user?.userId, dto);
+  }
+  @Get('reference/:reference')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async getPaymentByReference(
+    @Param('reference') reference: string,
+  ): Promise<Payment> {
+    return this.paystack.findByReference(reference);
   }
 
   @Post('create-page')

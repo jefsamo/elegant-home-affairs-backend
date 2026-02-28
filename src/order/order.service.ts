@@ -6,6 +6,7 @@
 // src/orders/orders.service.ts
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   forwardRef,
   Inject,
@@ -676,5 +677,112 @@ export class OrdersService {
       reference: init.reference,
       authorizationUrl: init.authorization_url,
     };
+  }
+
+  async createFromPaymentReference(reference: string) {
+    if (!reference || reference.trim() === '') {
+      throw new BadRequestException('Payment reference is required');
+    }
+
+    const ref = reference.trim();
+
+    // 1) Don't create duplicates
+    const existingOrder = await this.orderModel
+      .findOne({ paymentReference: ref })
+      .exec();
+
+    if (existingOrder) {
+      return existingOrder; // ✅ idempotent: returns existing, does not create
+    }
+
+    // 2) Validate payment exists + successful
+    const payment = await this.paymentModel.findOne({ reference: ref }).exec();
+    if (!payment) {
+      throw new NotFoundException(`Payment with reference ${ref} not found`);
+    }
+
+    if (payment.status !== 'success') {
+      // You can return 409 or 400; 409 is fine here because state isn't ready
+      throw new ConflictException(
+        `Payment ${ref} is not successful (status: ${payment.status ?? 'unknown'})`,
+      );
+    }
+
+    // 3) Build order from payment snapshot
+    const snap: any = payment.checkoutSnapshot;
+    if (!snap) {
+      throw new BadRequestException(
+        `Payment ${ref} has no checkoutSnapshot to build an order`,
+      );
+    }
+
+    // Expecting shape similar to what you pasted
+    const cart = snap.cart ?? [];
+    const delivery = snap.delivery ?? null;
+
+    if (!Array.isArray(cart) || cart.length === 0) {
+      throw new BadRequestException(`Payment ${ref} snapshot cart is empty`);
+    }
+
+    if (!delivery) {
+      throw new BadRequestException(
+        `Payment ${ref} snapshot delivery is missing`,
+      );
+    }
+
+    const amountKobo = payment.amount ?? 0;
+
+    const shippingFeeKobo =
+      typeof snap.shippingFee === 'number'
+        ? snap.shippingFee
+        : typeof delivery.shippingFee === 'number'
+          ? delivery.shippingFee
+          : 0;
+
+    const subtotalKobo = cart.reduce((sum: number, it: any) => {
+      const qty = Number(it.quantity ?? 0);
+      const priceNaira = Number(it.price ?? 0);
+      return sum + qty * priceNaira * 100;
+    }, 0);
+
+    const totalKobo =
+      amountKobo > 0 ? amountKobo : subtotalKobo + shippingFeeKobo;
+
+    const orderDoc = await this.orderModel.create({
+      userId: payment.userId ?? undefined,
+      items: cart.map((it: any) => ({
+        productId: it.productId,
+        productName: it.productName,
+        color: it.color ?? undefined,
+        quantity: Number(it.quantity ?? 1),
+        price: Number(it.price ?? 0),
+        weightScale: it.weightScale ?? undefined,
+      })),
+
+      subtotal: Math.round(subtotalKobo / 100),
+      shipping: Math.round(shippingFeeKobo / 100),
+      total: Math.round(totalKobo / 100),
+
+      totalAfterDiscount: Math.round(totalKobo / 100),
+      totalAndDiscountPlusShipping: Math.round(totalKobo / 100),
+
+      paymentReference: ref,
+      paymentStatus: 'paid',
+      paystackAccessCode: payment.accessCode ?? null,
+
+      delivery,
+      shippingMethod: snap.shippingMethod ?? delivery.shippingMethod ?? 'ship',
+      discountId: snap.discount?.id ?? null,
+      discountCode: snap.discount?.code ?? null,
+      discountPercentage: snap.discount?.percentage ?? 0,
+      discountAmount: snap.discount?.amount ?? 0,
+
+      orderStatus: 'processing',
+      source: snap.metadata?.source ?? 'customer',
+      paymentProvider: 'paystack',
+      refund: null,
+    });
+
+    return orderDoc;
   }
 }

@@ -43,7 +43,7 @@ export class Order {
   @Prop({ required: false })
   totalAndDiscountPlusShipping?: number;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true, unique: true, index: true })
   paymentReference: string;
 
   @Prop({ default: 'paid' })
