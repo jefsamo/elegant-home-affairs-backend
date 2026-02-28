@@ -6,7 +6,7 @@
 // src/products/products.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { Product } from './schemas/product.schema';
 import type { ProductDocument } from './schemas/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -117,5 +117,55 @@ export class ProductService {
   async remove(id: string): Promise<void> {
     const result = await this.productModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException('Product not found');
+  }
+
+  async checkAvailability(items: { productId: string; quantity: number }[]) {
+    const ids = items.map((i) => new Types.ObjectId(i.productId));
+
+    const products = await this.productModel
+      .find({ _id: { $in: ids } })
+      .select('_id isAvailable stock name')
+      .lean()
+      .exec();
+
+    const map = new Map(products.map((p: any) => [String(p._id), p]));
+
+    const results = items.map((it) => {
+      const p: any = map.get(it.productId);
+
+      if (!p) {
+        return {
+          productId: it.productId,
+          isAvailable: false,
+          reason: 'not_found',
+        };
+      }
+
+      if (!p.isAvailable) {
+        return {
+          productId: it.productId,
+          isAvailable: false,
+          reason: 'disabled',
+        };
+      }
+
+      if (typeof p.stock === 'number' && it.quantity > p.stock) {
+        return {
+          productId: it.productId,
+          isAvailable: false,
+          reason: 'insufficient_stock',
+          stock: p.stock,
+        };
+      }
+
+      return {
+        productId: it.productId,
+        isAvailable: true,
+      };
+    });
+
+    const allAvailable = results.every((r) => r.isAvailable);
+
+    return { allAvailable, results };
   }
 }

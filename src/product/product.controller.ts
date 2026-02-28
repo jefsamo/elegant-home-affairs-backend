@@ -24,6 +24,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { CheckAvailabilityDto } from './dto/check-availability.dto';
 
 @Controller('product')
 export class ProductController {
@@ -88,5 +89,10 @@ export class ProductController {
   async remove(@Param('id') id: string) {
     await this.productsService.remove(id);
     return { message: 'Product deleted' };
+  }
+
+  @Post('check-availability')
+  checkAvailability(@Body() dto: CheckAvailabilityDto) {
+    return this.productsService.checkAvailability(dto.items);
   }
 }
