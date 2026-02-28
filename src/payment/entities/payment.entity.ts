@@ -14,7 +14,8 @@ export class Payment {
     raw?: any;
   };
 
-  reference?: string;
+  @Prop({ type: String, required: true, unique: true, index: true })
+  reference: string;
   status?: string;
   accessCode?: string;
   shippingFee?: number; //in kobo

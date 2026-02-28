@@ -8,6 +8,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
@@ -41,7 +42,23 @@ export class PaystackService {
       throw new Error('PAYSTACK_SECRET_KEY is not set');
     }
   }
+  async findByReference(reference: string): Promise<Payment> {
+    if (!reference || reference.trim() === '') {
+      throw new BadRequestException('Payment reference is required');
+    }
 
+    const payment = await this.paymentModel
+      .findOne({ reference: reference.trim() })
+      .exec();
+
+    if (!payment) {
+      throw new NotFoundException(
+        `Payment with reference ${reference} not found`,
+      );
+    }
+
+    return payment;
+  }
   private buildDeliverySummary(delivery: any): string {
     if (!delivery || typeof delivery !== 'object') {
       return 'Delivery details not available.';
