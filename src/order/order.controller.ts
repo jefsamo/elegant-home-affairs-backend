@@ -82,6 +82,26 @@ export class OrderController {
   createFromPaymentReference(@Param('reference') reference: string) {
     return this.orderService.createFromPaymentReference(reference);
   }
+  @Post('manual-from-payment/:reference')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  manualCreateFromPaymentReference(@Param('reference') reference: string) {
+    return this.orderService.manualCreateFromPaymentReference(reference);
+  }
+
+  @Get('missing-payment-references')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async getSuccessfulPaymentsWithoutOrder() {
+    const data = await this.orderService.findSuccessfulPaymentsWithoutOrder();
+
+    return {
+      message:
+        'Successful payments whose reference does not exist in Order.paymentReference',
+      count: data.length,
+      missingReferences: data,
+    };
+  }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
